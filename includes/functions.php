@@ -1,3 +1,4 @@
+<?php echo "Plik functions.php został załadowany przez autoloader.<br>"; ?>
 
 
 <?php
@@ -42,7 +43,26 @@ function SendSMSNokia($PhoneNr,$SMScontent) {
 ?>
 
 
+<?php
+function db_connect_mysqli() {
+    $servername = "192.168.101.240";
+    $username = "kmadzia";
+    $password = "PLdpzwZ]gvj_W5SZ";
+    $database = "prosto";
 
+    // Nawiązanie połączenia z użyciem mysqli
+    $conn = mysqli_connect($servername, $username, $password, $database);
+
+    // Sprawdzenie, czy połączenie się powiodło
+    if (!$conn) {
+        die("Błąd połączenia z bazą danych: " . mysqli_connect_error());
+    }
+
+    return $conn; // Zwrócenie obiektu połączenia
+}
+
+
+?>  
 
 
 
@@ -67,24 +87,6 @@ function db_connect() {
 #endregion
 ?>
 
-<?php //łączenie do bazy PROSTO  mysqli
-function db_connect_mysqli() {
-    $servername = "192.168.101.240";
-    $username = "kmadzia";
-    $password = "PLdpzwZ]gvj_W5SZ";
-    $database = "prosto";
-    // Tworzymy połączenie
-    $connection = mysqli_connect($servername, $username, $password, $database);
-    // Sprawdzamy, czy połączenie się powiodło
-    if (mysqli_connect_errno()) {
-        // Jeśli wystąpił błąd połączenia, zwracamy false i wyświetlamy komunikat
-        echo "Błąd połączenia z bazą danych: " . mysqli_connect_error();
-        return false;  // Zwracamy false, jeśli połączenie nie udało się nawiązać
-    }
-    // Jeśli połączenie powiodło się, zwracamy obiekt połączenia
-    return $connection;
-}
-?>
 
 
 <?php //pobieranie danych z bazy PROSTO
@@ -137,6 +139,8 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         $firstRow = $result_all_data[0]; // Pierwszy element tablicy
         $table .= "<tr>";
 
+        echo 'oto zawartosc table na razie : ' . $table . '<br>';
+        
         // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
         $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
         foreach ($columns as $column) {
@@ -148,6 +152,9 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         foreach ($result_all_data as $row) {
             $prefix = substr($row['Nazwa_produktu'], 0, 5);
 
+            //echo 'wchodzimy do wiersza nr: ' . $row . '. Nazwa produktu dla tego wiersza to: ' . $row['Nazwa_produktu'] . '<br>';
+
+            //var_dump($prefix);
             //********************************
             // Filtrowanie pozycji w liście `$lista_towarow` na podstawie pierwszych 5 znaków
             $filteredOptions = array_filter($lista_towarow, function($item) use ($prefix) {
@@ -155,11 +162,14 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
             });
             //********************************
 
+            
             //********************************
             // Sprawdzamy, czy wartość `Name_fakt` znajduje się na liście `$lista_towarow`
             $isOnList = in_array(strtolower($row['name_fakt']), array_map('strtolower', $lista_towarow));
             $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';  // Kolorowanie wierszy
             //********************************
+
+            echo 'oto zawartosc table na razie : ' . $table . '<br>';
 
             foreach ($columns as $column) {
                 if (strtolower($column) === 'name_fakt') {
@@ -176,6 +186,7 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
                     //********************************
                 } else {
                     $table .= '<td>' . htmlspecialchars($row[strtolower($column)] ?? '') . '</td>';
+                   // echo 'dodano kolejna wartosc do kolumny ' . $column . '. Ta wartosc to :' . htmlspecialchars($row[strtolower($column)] ?? '') . '<br>';
                 }
             }
             $table .= "</tr>";
@@ -184,6 +195,7 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         $table .= '</form>';
 
         return $table; // Zwracamy tabelę jako ciąg znaków
+
     } else {
         return "Brak wyników.<br>";
     }
@@ -328,8 +340,12 @@ function executeSQL($connection, $filePath, $param = null) {
         // Wczytanie treści zapytania SQL z pliku
         $sql = file_get_contents($filePath);
 
+        //var_dump($sql); // Debugging - wyświetlenie treści zapytania SQL
+
         // Przygotowanie zapytania
         $stmt = $connection->prepare($sql);
+
+        //var_dump($stmt); // Debugging - wyświetlenie obiektu zapytania  
 
         // Sprawdzenie, czy zapytanie zostało poprawnie przygotowane
         if (!$stmt) {
@@ -341,8 +357,14 @@ function executeSQL($connection, $filePath, $param = null) {
             $stmt->bind_param('s', $param); // 's' oznacza typ parametru (string)
         }
 
+        $finalQuery = str_replace("?", "'" . $param . "'", $sql);  //tylko do podglądu treści zapytania
+
+        //var_dump($finalQuery); // Debugging - wyświetlenie treści zapytania SQL
+
         // Wykonanie zapytania
         $stmt->execute();
+
+        //var_dump($stmt); // Debugging - wyświetlenie obiektu zapytania
 
         // Pobranie wyników
         $result = $stmt->get_result();
@@ -350,6 +372,8 @@ function executeSQL($connection, $filePath, $param = null) {
         while ($row = $result->fetch_assoc()) {
             $results[] = $row;
         }
+
+       // var_dump($results); // Debugging - wyświetlenie wyników
 
         // Zwracanie wyników
         return $results;
@@ -459,7 +483,7 @@ function executeBatchFileOnKMpc($fileName) {
 
 
 
-function ClearSessionKM() {
+function ClearSessionAndReload_KM() {
     // Sprawdzenie, czy sesja jest już uruchomiona
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
@@ -468,4 +492,7 @@ function ClearSessionKM() {
     $_SESSION = array();
     // Zniszczenie sesji
     session_destroy();
+    // Przekierowanie na tę samą stronę w celu odświeżenia
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
 }

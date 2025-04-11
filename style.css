@@ -31,13 +31,14 @@ html, body {
 }
 
 .content {
-    /*padding-top: var(--header-height); /* Dopasowanie do wysokości nagłówka */
-    flex-grow: 1; /* Wypełnia dostępne miejsce */
-    background-color: #f0f0f0; /* Kolor tła */
-    overflow-y: auto; /* Dodanie paska przewijania */
-    padding-top: var(--header-height);
-    border: 1px solid red; /* Tymczasowa ramka do testów */
+    flex-grow: 1; /* Wypełnia dostępne miejsce między nagłówkiem a stopką */
+    height: calc(100vh - var(--header-height) - 50px); /* Odejmij wysokość nagłówka i stopki */
+    padding-top: var(--header-height); /* Dopasowanie do nagłówka */
+    overflow-y: auto; /* Pasek przewijania */
+    background-color: #f0f0f0; /* Tło */
+    box-sizing: border-box; /* Uwzględnia padding */
 }
+
 
 footer {
     background-color: #0c4955; /* Kolor tła */
@@ -50,6 +51,18 @@ footer {
     max-height: 150px; /* Maksymalna wysokość */
 }
 
+/* Zawartość główna — wypełnia przestrzeń ponad stopką */
+.container {
+    width: 300px;  /* Stała szerokość kontenera */
+    height: 200px; /* Stała wysokość kontenera */
+    background-color: #f9f9f9; /* Tło kontenera */
+    border: 1px solid #ccc;  /* Ramka wokół kontenera */
+    padding: 20px; /* Odstępy wewnętrzne */
+    position: fixed; /* Ustalamy pozycję względem okna przeglądarki */
+    top: 80; /* Ustawienie kontenera w górnym obrzeżu */
+    right: 0; /* Ustawienie kontenera w prawym obrzeżu */
+    z-index: 1000; /* Zwiększamy wartość, aby kontener był na wierzchu */
+}
 
 
 ul {

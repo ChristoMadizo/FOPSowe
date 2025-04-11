@@ -2,7 +2,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 require '/home/kmadzia/www/vendor/autoload.php';
-include_once '/home/kmadzia/www/includes/functions.php';
+
 
 $sql = 'with LastModDate as(
 SELECT 

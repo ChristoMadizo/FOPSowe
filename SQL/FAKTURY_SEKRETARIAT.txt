@@ -66,12 +66,9 @@ SELECT
     ordersKM.ContractorCountry as ContractorCountry,
     ordersKM.Name as Name,
     ordersKM.OrderContactName OrderContactName
---    GrupyZam├│wie┼ä.Serial as NumerGrupyZamowien
 FROM
     ordersKM
 INNER JOIN
     OrderItems ON ordersKM.Zamowienie = OrderItems.Zamowienie
  WHERE
     Parent = 0
--- INNER JOIN
---    prosto.orders_groups GrupyZam├│wie┼ä ON ordersKM.IdGrupyZamowienia = GrupyZam├│wie┼ä.id
