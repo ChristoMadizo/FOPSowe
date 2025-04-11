@@ -1,0 +1,90 @@
+:root {
+    --header-height: 20px; /* Zwiększenie wysokości nagłówka */
+}
+
+nav ul {    /*odpowiada za wygląd menu*/
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    padding-left: 20px;
+    display: flex; /*flexbox - pozycje menu w jednej lini*/
+}
+
+nav ul li { /*odpowiada za wygląd menu*/
+    margin-right: 10px; /* Przerwa między elementami menu */
+}
+
+
+nav ul li a {
+    text-decoration: none;
+    color: #615d5d; /* Możesz ustawić dowolny kolor */
+}
+
+/* Dodanie wrappera, który rozciąga się na całą wysokość */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Pełna wysokość view point*/
+    padding-top: var(--header-height); /* Miejsce na nagłówek */
+}
+/* Nagłówek — zawsze na górze */
+header {
+    background-color: #f0f0f0; /* Lekko siwe tło */
+    color: rgb(150, 94, 94); /* Kolor tekstu */
+    text-align: left; /* Wyśrodkowanie tekstu */
+    padding: 20px 0; /* Odstępy wokół tekstu */
+    font-family: Arial, sans-serif; /* Czcionka nagłówka */
+    position: fixed; /* Przyklejenie do góry */
+    top: 0; /* Przyklej na górze */
+    width: 100%; /* Pełna szerokość */
+    z-index: 1000; /* Na wierzchu */
+    height: var(--header-height); /* Ustalona wysokość */
+}
+
+/* Resetowanie marginesów i ustawienie flexboxa dla body */
+html,body {
+    /* display: flex; - to wywalam, bo załatwia to już wrapper */
+    margin: 0;
+    font-family: Arial, sans-serif;
+    height: 100%;
+}
+
+/* Zawartość główna — wypełnia przestrzeń ponad stopką */
+.content {
+    flex-grow: 1;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+/* Stopka — zawsze na dole */
+footer {
+    background-color: #86c2eb;
+    color: rgb(150, 94, 94);
+    text-align: center;
+    padding: 20px 0;
+    font-family: Arial, sans-serif;
+    margin-top: auto; /* Dodano automatyczne wypychanie */
+}
+
+.container {
+    width: 300px;  /* Stała szerokość kontenera */
+    height: 200px; /* Stała wysokość kontenera */
+    background-color: #ebe4d3; /* Tło kontenera */
+    border: 5px solid #383434;  /* Ramka wokół kontenera */
+    padding: 20px; /* Odstępy wewnętrzne */
+    position: fixed; /* Ustalamy pozycję względem okna przeglądarki */
+    top: 120px; /* Ustawienie kontenera w górnym obrzeżu */
+    right: 0; /* Ustawienie kontenera w prawym obrzeżu */
+    z-index: 1000; /* Zwiększamy wartość, aby kontener był na wierzchu */
+}
+
+.container_small {
+    width: 300px;  /* Stała szerokość kontenera */
+    height: 20px; /* Stała wysokość kontenera */
+    background-color: #ebe4d3; /* Tło kontenera */
+    border: 5px solid #383434;  /* Ramka wokół kontenera */
+    padding: 0px; /* Odstępy wewnętrzne */
+    position: relative; /* Ustalamy pozycję względem okna przeglądarki */
+    top: 200px; /* Ustawienie kontenera w górnym obrzeżu */
+    right: 0; /* Ustawienie kontenera w prawym obrzeżu */
+    z-index: 1000; /* Zwiększamy wartość, aby kontener był na wierzchu */
+}

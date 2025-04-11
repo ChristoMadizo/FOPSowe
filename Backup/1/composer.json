@@ -1,0 +1,14 @@
+{
+    "name": "kmadzia/www",
+    "autoload": {
+        "psr-4": {
+            "Kmadzia\\Www\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "KM"
+        }
+    ],
+    "require": {}
+}
