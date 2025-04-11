@@ -128,7 +128,7 @@ function display_table($stmt) {
 #endregion
 ?>
 
-<?php
+<?php    //wersja dla FAKTUR!
 function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display = [], $lista_towarow = []) {
     // Sprawdzamy, czy tablica nie jest pusta
     if (!empty($result_all_data)) {
@@ -148,26 +148,34 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         foreach ($result_all_data as $row) {
             $prefix = substr($row['Nazwa_produktu'], 0, 5);
 
+            //********************************
             // Filtrowanie pozycji w liście `$lista_towarow` na podstawie pierwszych 5 znaków
             $filteredOptions = array_filter($lista_towarow, function($item) use ($prefix) {
                 return strpos($item, $prefix) === 0;
             });
+            //********************************
 
+            //********************************
             // Sprawdzamy, czy wartość `Name_fakt` znajduje się na liście `$lista_towarow`
-            $isOnList = in_array(strtolower($row['Name_fakt']), array_map('strtolower', $lista_towarow));
-            $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';  // jeśli jest na liście towarów, to kolor biały, w przeciwnym razie czerwony
+            $isOnList = in_array(strtolower($row['name_fakt']), array_map('strtolower', $lista_towarow));
+            $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';  // Kolorowanie wierszy
+            //********************************
 
             foreach ($columns as $column) {
-                if ($column === 'name_fakt') {
-                    // Tworzenie listy rozwijanej z filtrowanymi opcjami
-                    $table .= '<td><select name="name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
-                    $table .= '<option value="' . htmlspecialchars($row[$column]) . '">' . htmlspecialchars($row[$column]) . '</option>'; // Obecna wartość jako domyślna
-                    foreach ($filteredOptions as $option) {
+                if (strtolower($column) === 'name_fakt') {
+                    //********************************
+                    // Tworzenie listy rozwijalnej z filtrowanymi opcjami
+                    $table .= '<td><select name="Name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
+
+                    $table .= '<option value="' . htmlspecialchars($row[strtolower($column)]) . '">' . 
+                        htmlspecialchars($row[strtolower($column)]) . '</option>'; // Obecna wartość jako domyślna
+                    foreach ($filteredOptions as $option) { // Dodanie opcji z filtrowanej listy
                         $table .= '<option value="' . htmlspecialchars($option) . '">' . htmlspecialchars($option) . '</option>';
                     }
                     $table .= '</select></td>';
+                    //********************************
                 } else {
-                    $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
+                    $table .= '<td>' . htmlspecialchars($row[strtolower($column)] ?? '') . '</td>';
                 }
             }
             $table .= "</tr>";
@@ -180,8 +188,8 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         return "Brak wyników.<br>";
     }
 }
-
 ?>
+
 
 
 <?php
@@ -449,3 +457,15 @@ function executeBatchFileOnKMpc($fileName) {
     }
 }
 
+
+
+function ClearSessionKM() {
+    // Sprawdzenie, czy sesja jest już uruchomiona
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    // Usunięcie wszystkich zmiennych sesyjnych
+    $_SESSION = array();
+    // Zniszczenie sesji
+    session_destroy();
+}

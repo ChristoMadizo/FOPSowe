@@ -2,7 +2,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 require '/home/kmadzia/www/vendor/autoload.php';
-//session_start();
+session_start();
 
 // Połączenie z bazą danych
 $connection = db_connect_mysqli();
@@ -37,6 +37,7 @@ if ($result) {
         <label for="zlecenie">Numer zamówienia:</label>
         <input type="text" name="zlecenie" id="zlecenie" placeholder="Wpisz numer zamówienia" value="<?php echo htmlspecialchars($_SESSION['zlecenie'] ?? ''); ?>">
         <button type="submit" name="action" value="filter" style="position: relative; left: 50px; width: 100px;">Pokaż</button>
+        <button type="button" onclick="ClearSessionKM()" style="position: relative; left: 60px; width: 120px;">Wyczyść Sesję</button>
     </form>
 
     <?php
@@ -67,7 +68,7 @@ if ($result) {
             });
 
             // Wywołanie funkcji i przechowywanie tabeli w zmiennej
-            $table = display_table_from_array(
+            $table = display_table_from_arrayFAKTURY(
                 $zawartosc_zlecenia,
                 ['Zamowienie', 'DataZamowienia', 'Ilosc', 'Cena', 'PositionTotalAmount', 'CurrencyCode', 'JM', 'Nazwa_produktu', 'Name_fakt', 'name_fakt2'],
                 $lista_towarow
