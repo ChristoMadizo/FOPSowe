@@ -129,7 +129,7 @@ function display_table($stmt) {
 ?>
 
 <?php
-function display_table_from_array($result_all_data, $columns_to_display = [], $lista_towarow = []) {
+function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display = [], $lista_towarow = []) {
     // Sprawdzamy, czy tablica nie jest pusta
     if (!empty($result_all_data)) {
         $table = '<form method="POST">'; // Formularz dla edycji danych
@@ -182,6 +182,58 @@ function display_table_from_array($result_all_data, $columns_to_display = [], $l
 }
 
 ?>
+
+
+<?php
+function display_table_from_array($result_all_data, $columns_to_display = []) {
+    // Sprawdzamy, czy tablica nie jest pusta
+    if (!empty($result_all_data)) {
+        $table = '<form method="POST">'; // Formularz dla edycji danych
+        $table .= "<table border='1'>";
+        $firstRow = $result_all_data[0]; // Pierwszy element tablicy
+        $table .= "<tr>";
+
+       
+        // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
+        $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
+        foreach ($columns as $column) {
+            $table .= "<th>" . htmlspecialchars($column) . "</th>";
+        }
+        $table .= "</tr>";
+
+        
+        // Wyświetlamy wszystkie wiersze
+        foreach ($result_all_data as $row) {
+            //******************************** Usunięto kolorowanie i sprawdzanie listy towarów ********************************
+            $table .= '<tr>';
+
+            foreach ($columns as $column) {
+                if ($column === 'name_fakt') {
+                    // Tworzenie listy rozwijanej bez filtrowania opcji
+                    $table .= '<td><select name="name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
+                    $table .= '<option value="' . htmlspecialchars($row[$column]) . '">' . htmlspecialchars($row[$column]) . '</option>'; // Obecna wartość jako domyślna
+                    //******************************** Usunięto filtrowanie opcji ********************************
+                    $table .= '</select></td>';
+                } else {
+                    $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
+                }
+            }
+            $table .= "</tr>";
+        }
+        $table .= "</table>";
+        $table .= '</form>';
+
+
+        return $table; // Zwracamy tabelę jako ciąg znaków
+    } else {
+        return "Brak wyników.<br>";
+    }
+}
+?>
+
+
+
+
 
 
 

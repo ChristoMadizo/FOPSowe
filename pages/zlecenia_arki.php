@@ -179,7 +179,8 @@ WHERE
                     // Wyświetlamy przefiltrowane dane
                     if (!empty($filtered_data)) {
                         echo "<h2>Dane dla grupy zamówień: $selected_group</h2>";
-                        display_table_from_array($filtered_data,$columns_to_display);
+                        $table= display_table_from_array($filtered_data,$columns_to_display);
+                        echo $table     ; // Wyświetlenie tabeli - rezultat funkcji
                     } else {
                         echo "Brak danych dla wybranej grupy.";
                     }

@@ -56,7 +56,11 @@ if ($result) {  //zapełnia tablicę $result_all_data
 <body>
     <p style="color: darkgreen; font-weight: bold;">Lista kodów z wyłączoną opcją Dozw.wsp.etykiety: (bez kodów z typem "Rola")</p>
     <div class="content">
-        <?php display_table_from_array($result_all_data,['Lp','code','name','unit_code','unit_type']); ?>
+        <?php $table=display_table_from_array($result_all_data,['Lp','code','name','unit_code','unit_type']);
+		echo $table;
+		
+		
+		?>
     </div>
 </body>
 </html>

@@ -38,7 +38,9 @@ if ($result) {  //zapełnia tablicę $result_all_data
 <body>
     <p style="color: darkgreen; font-weight: bold;">Lista kodów i nazw towarów z certyfikatem FSC:</p>
     <div class="content">
-        <?php display_table_from_array($result_all_data); ?>
+        <?php $table=display_table_from_array($result_all_data);
+        echo $table;
+                ?>
     </div>
 </body>
 </html>
