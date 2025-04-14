@@ -139,8 +139,6 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         $firstRow = $result_all_data[0]; // Pierwszy element tablicy
         $table .= "<tr>";
 
-        echo 'oto zawartosc table na razie : ' . $table . '<br>';
-        
         // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
         $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
         foreach ($columns as $column) {
@@ -150,43 +148,37 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
 
         // Wyświetlamy wszystkie wiersze
         foreach ($result_all_data as $row) {
+            // Obliczanie prefixu dla bieżącego wiersza
             $prefix = substr($row['Nazwa_produktu'], 0, 5);
 
-            //echo 'wchodzimy do wiersza nr: ' . $row . '. Nazwa produktu dla tego wiersza to: ' . $row['Nazwa_produktu'] . '<br>';
-
-            //var_dump($prefix);
-            //********************************
-            // Filtrowanie pozycji w liście `$lista_towarow` na podstawie pierwszych 5 znaków
+            //********************************************
+            // Filtrowanie pozycji w liście `$lista_towarow` na podstawie zgodności prefixu
             $filteredOptions = array_filter($lista_towarow, function($item) use ($prefix) {
                 return strpos($item, $prefix) === 0;
             });
-            //********************************
+            //********************************************
 
-            
-            //********************************
             // Sprawdzamy, czy wartość `Name_fakt` znajduje się na liście `$lista_towarow`
             $isOnList = in_array(strtolower($row['name_fakt']), array_map('strtolower', $lista_towarow));
-            $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';  // Kolorowanie wierszy
-            //********************************
-
-            echo 'oto zawartosc table na razie : ' . $table . '<br>';
+            $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';
 
             foreach ($columns as $column) {
                 if (strtolower($column) === 'name_fakt') {
-                    //********************************
-                    // Tworzenie listy rozwijalnej z filtrowanymi opcjami
-                    $table .= '<td><select name="Name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
-
-                    $table .= '<option value="' . htmlspecialchars($row[strtolower($column)]) . '">' . 
-                        htmlspecialchars($row[strtolower($column)]) . '</option>'; // Obecna wartość jako domyślna
-                    foreach ($filteredOptions as $option) { // Dodanie opcji z filtrowanej listy
-                        $table .= '<option value="' . htmlspecialchars($option) . '">' . htmlspecialchars($option) . '</option>';
+                    //********************************************
+                    // Tworzymy pole typu `input` z `datalist`, które zawiera dynamicznie filtrowane opcje
+                    $table .= '<td>';
+                    $table .= '<input type="text" name="Name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']" list="options_' . htmlspecialchars($row['Zamowienie']) . '" value="' . htmlspecialchars($row[strtolower($column)]) . '">';
+                    
+                    // Dynamicznie generowana lista rozwijalna
+                    $table .= '<datalist id="options_' . htmlspecialchars($row['Zamowienie']) . '">';
+                    foreach ($filteredOptions as $option) {
+                        $table .= '<option value="' . htmlspecialchars($option) . '">';
                     }
-                    $table .= '</select></td>';
-                    //********************************
+                    $table .= '</datalist>';
+                    $table .= '</td>';
+                    //********************************************
                 } else {
-                    $table .= '<td>' . htmlspecialchars($row[strtolower($column)] ?? '') . '</td>';
-                   // echo 'dodano kolejna wartosc do kolumny ' . $column . '. Ta wartosc to :' . htmlspecialchars($row[strtolower($column)] ?? '') . '<br>';
+                    $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
                 }
             }
             $table .= "</tr>";
@@ -200,6 +192,8 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
         return "Brak wyników.<br>";
     }
 }
+
+
 ?>
 
 
@@ -489,7 +483,7 @@ function ClearSessionAndReload_KM() {
         session_start();
     }
     // Usunięcie wszystkich zmiennych sesyjnych
-    $_SESSION = array();
+    $_SESSION = [];
     // Zniszczenie sesji
     session_destroy();
     // Przekierowanie na tę samą stronę w celu odświeżenia

@@ -3,6 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 require '/home/kmadzia/www/vendor/autoload.php';
 
+phpinfo();
 
 $sql = 'with LastModDate as(
 SELECT 
