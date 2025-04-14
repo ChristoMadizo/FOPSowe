@@ -132,117 +132,61 @@ function display_table($stmt) {
 
 <?php    //wersja dla FAKTUR!
 function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display = [], $lista_towarow = []) {
-    // Sprawdzamy, czy tablica nie jest pusta
     if (!empty($result_all_data)) {
-        $table = '<form method="POST">'; // Formularz dla edycji danych
-        $table .= "<table border='1'>";
+        $table = "<table border='1'>"; // Tabela bez formularza
         $firstRow = $result_all_data[0]; // Pierwszy element tablicy
-        $table .= "<tr>";
 
-        // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
+        // Nagłówki tabeli
+        $table .= "<tr>";
         $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
         foreach ($columns as $column) {
             $table .= "<th>" . htmlspecialchars($column) . "</th>";
         }
         $table .= "</tr>";
 
-        // Wyświetlamy wszystkie wiersze
+        // Wiersze tabeli
         foreach ($result_all_data as $row) {
-            // Obliczanie prefixu dla bieżącego wiersza
             $prefix = substr($row['Nazwa_produktu'], 0, 5);
 
-            //********************************************
-            // Filtrowanie pozycji w liście `$lista_towarow` na podstawie zgodności prefixu
-            $filteredOptions = array_filter($lista_towarow, function($item) use ($prefix) {
-                return strpos($item, $prefix) === 0;
+            // Filtrowanie pozycji w liście `$lista_towarow`
+            $filteredOptions = array_filter($lista_towarow, function ($item) use ($prefix) {
+                return stripos($item, $prefix) !== false;
             });
-            //********************************************
+            
 
-            // Sprawdzamy, czy wartość `Name_fakt` znajduje się na liście `$lista_towarow`
+            // Kolorowanie wierszy na podstawie wartości `name_fakt`
             $isOnList = in_array(strtolower($row['name_fakt']), array_map('strtolower', $lista_towarow));
             $table .= '<tr style="background-color: ' . ($isOnList ? 'white' : 'red') . ';">';
 
             foreach ($columns as $column) {
                 if (strtolower($column) === 'name_fakt') {
-                    //********************************************
-                    // Tworzymy pole typu `input` z `datalist`, które zawiera dynamicznie filtrowane opcje
+                    // Generowanie pola input z wartością pobraną z bazy danych
                     $table .= '<td>';
-                    $table .= '<input type="text" name="Name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']" list="options_' . htmlspecialchars($row['Zamowienie']) . '" value="' . htmlspecialchars($row[strtolower($column)]) . '">';
-                    
-                    // Dynamicznie generowana lista rozwijalna
+                    $table .= '<input type="text" name="name_fakt[]" value="' . htmlspecialchars($row['name_fakt']) . '" list="options_' . htmlspecialchars($row['Zamowienie']) . '">'; // Pole tekstowe z podpowiedziami
                     $table .= '<datalist id="options_' . htmlspecialchars($row['Zamowienie']) . '">';
                     foreach ($filteredOptions as $option) {
                         $table .= '<option value="' . htmlspecialchars($option) . '">';
                     }
                     $table .= '</datalist>';
                     $table .= '</td>';
-                    //********************************************
                 } else {
+                    // Wyświetlenie wartości dla innych kolumn
                     $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
                 }
             }
+            
+            
             $table .= "</tr>";
         }
+
         $table .= "</table>";
-        $table .= '</form>';
 
-        return $table; // Zwracamy tabelę jako ciąg znaków
-
+        return $table; // Zwracamy tylko tabelę
     } else {
         return "Brak wyników.<br>";
     }
 }
 
-
-?>
-
-
-
-<?php
-function display_table_from_array($result_all_data, $columns_to_display = []) {
-    // Sprawdzamy, czy tablica nie jest pusta
-    if (!empty($result_all_data)) {
-        $table = '<form method="POST">'; // Formularz dla edycji danych
-        $table .= "<table border='1'>";
-        $firstRow = $result_all_data[0]; // Pierwszy element tablicy
-        $table .= "<tr>";
-
-       
-        // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
-        $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
-        foreach ($columns as $column) {
-            $table .= "<th>" . htmlspecialchars($column) . "</th>";
-        }
-        $table .= "</tr>";
-
-        
-        // Wyświetlamy wszystkie wiersze
-        foreach ($result_all_data as $row) {
-            //******************************** Usunięto kolorowanie i sprawdzanie listy towarów ********************************
-            $table .= '<tr>';
-
-            foreach ($columns as $column) {
-                if ($column === 'name_fakt') {
-                    // Tworzenie listy rozwijanej bez filtrowania opcji
-                    $table .= '<td><select name="name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
-                    $table .= '<option value="' . htmlspecialchars($row[$column]) . '">' . htmlspecialchars($row[$column]) . '</option>'; // Obecna wartość jako domyślna
-                    //******************************** Usunięto filtrowanie opcji ********************************
-                    $table .= '</select></td>';
-                } else {
-                    $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
-                }
-            }
-            $table .= "</tr>";
-        }
-        $table .= "</table>";
-        $table .= '</form>';
-
-
-        return $table; // Zwracamy tabelę jako ciąg znaków
-    } else {
-        return "Brak wyników.<br>";
-    }
-}
 ?>
 
 
@@ -489,4 +433,52 @@ function ClearSessionAndReload_KM() {
     // Przekierowanie na tę samą stronę w celu odświeżenia
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
+}
+
+
+
+
+function display_table_from_array($result_all_data, $columns_to_display = []) {
+    // Sprawdzamy, czy tablica nie jest pusta
+    if (!empty($result_all_data)) {
+        $table = '<form method="POST">'; // Formularz dla edycji danych
+        $table .= "<table border='1'>";
+        $firstRow = $result_all_data[0]; // Pierwszy element tablicy
+        $table .= "<tr>";
+
+       
+        // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
+        $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
+        foreach ($columns as $column) {
+            $table .= "<th>" . htmlspecialchars($column) . "</th>";
+        }
+        $table .= "</tr>";
+
+        
+        // Wyświetlamy wszystkie wiersze
+        foreach ($result_all_data as $row) {
+            //******************************** Usunięto kolorowanie i sprawdzanie listy towarów ********************************
+            $table .= '<tr>';
+
+            foreach ($columns as $column) {
+                if ($column === 'name_fakt') {
+                    // Tworzenie listy rozwijanej bez filtrowania opcji
+                    $table .= '<td><select name="name_fakt[' . htmlspecialchars($row['Zamowienie']) . ']">';
+                    $table .= '<option value="' . htmlspecialchars($row[$column]) . '">' . htmlspecialchars($row[$column]) . '</option>'; // Obecna wartość jako domyślna
+                    //******************************** Usunięto filtrowanie opcji ********************************
+                    $table .= '</select></td>';
+                } else {
+                    $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
+                }
+            }
+            $table .= "</tr>";
+        }
+        $table .= "</table>";
+        $table .= '</form>';
+
+
+        return $table; // Zwracamy tabelę jako ciąg znaków
+    } else {
+        return "Brak wyników.<br>";
+    }
 }
