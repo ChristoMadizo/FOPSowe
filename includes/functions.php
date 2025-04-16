@@ -482,3 +482,33 @@ function display_table_from_array($result_all_data, $columns_to_display = []) {
         return "Brak wyników.<br>";
     }
 }
+?>
+
+<?php
+function save_data_to_csv($data, $file_path) {
+    // Otwieranie pliku w trybie zapisu (wstawienie danych na początku, jeżeli plik istnieje)
+    $file = fopen($file_path, 'w');
+
+    if ($file === false) {
+        echo "Błąd: Nie udało się otworzyć pliku!";
+        return false;
+    }
+
+    // Zapisywanie nagłówków, jeśli są dostępne
+    if (!empty($data)) {
+        // Jeśli dane są tablicą asocjacyjną, zapisujemy nagłówki
+        fputcsv($file, array_keys($data[0]));  // Pierwszy wiersz jako nagłówki
+    }
+
+    // Zapis danych do pliku CSV
+    foreach ($data as $row) {
+        fputcsv($file, $row);
+    }
+
+    // Zamknięcie pliku
+    fclose($file);
+
+    return true;
+}
+
+?>
