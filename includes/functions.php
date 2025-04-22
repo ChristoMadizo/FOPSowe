@@ -106,10 +106,10 @@ function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {
         // Sprawdzamy, czy w treści wiadomości (message_content) znajduje się numer telefonu
         if (strpos($sms['message_content'], $nr_telefonu) !== false) {
             // Jeśli numer telefonu znajduje się w treści wiadomości
-            echo "Znaleziono SMS z numerem telefonu $nr_telefonu:\n";
+           /* echo "Znaleziono SMS z numerem telefonu $nr_telefonu:\n";
             echo "Numer telefonu: " . $sms['phone_number'] . "\n";
             echo "Data: " . $sms['date_time'] . "\n";
-            echo "Treść: " . $sms['message_content'] . "\n";
+            echo "Treść: " . $sms['message_content'] . "\n";*/
             
             // Ustawiamy flagę na true i przerywamy pętlę
             $SMS_confirmation_data = [  //tworzy dane do dodania do bazy danych - event potwierdzenia smsa

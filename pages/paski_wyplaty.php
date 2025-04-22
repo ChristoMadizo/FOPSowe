@@ -5,6 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Reset sesji
     unset($_SESSION['lista_pracownikow']);
     exit("Sesja została zresetowana, wykonanie skryptu zakończone.");
+}
 
 require '/home/kmadzia/www/vendor/autoload.php';
 require '/home/kmadzia/www/includes/functions.php';
@@ -61,18 +62,21 @@ foreach ($table as $index => $row) {  //ładuje dane do tabeli
         $table[$index]['adres_email'] = $workers_info[0]['e_address'];
         $table[$index]['nr_telefonu'] = $workers_info[0]['phone_number'];
         $table[$index]['Last_SMS_Email_date'] = $workers_info[0]['Last_SMS_Email_date'];
-        $table[$index]['Last_SMS_Email_date'] = $workers_info[0]['Last_SMS_Email_date'];
+        $table[$index]['Last_SMS_confirmation_date'] = $workers_info[0]['Last_SMS_confirmation_date'];
 
     }
 }
 
+
+
 // Obsługa przycisków
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_POST['action'] === 'email' || $_POST['action'] === 'email_and_SMS')) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_POST['action'] === 'email' || $_POST['action'] === 'email_and_SMS' )) {
     $Lp = $_POST['Lp']; // Pobranie numeru wiersza
     $nazwisko_imie = $_POST['nazwisko_imie'];
     $nr_telefonu = $_POST['nr_telefonu'];
     $adres_email = $_POST['adres_email'];
     $action = $_POST['action'];
+
 
     if ($action === 'sms') {
         $tekst_wiadomosci = $lista_pracownikow[$Lp - 1]['haslo_pdf'];
@@ -82,8 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_PO
         $tresc = "Witamy z formularza";
         $sciezka_pdf = $_POST['sciezka_pdf'];
         $result = sendEmail($adres_email, $tytul, $tresc, $sciezka_pdf);
-    }
-    elseif ($action === 'email_and_SMS') {
+    } elseif ($action === 'email_and_SMS') {
         $tytul = "To jest tytul";
         $tresc = "Witamy z formularza";
         $sciezka_pdf = $_POST['sciezka_pdf'];
@@ -99,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_PO
         $sendCopyToNokia = SendSMSNokia(789757533,$nr_telefonu); //kopia wysyłana na Nokię - w treści numer telefonu pracownika na który wysłano SMS
         
          $data = [  //tworzy dane do dodania do bazy danych
-            'worker_id' => $worker_id,
+            'worker_id' => $worker_id[1][0]['id'],
             'date' => $event_datetime, // Użycie obiektu DateTime
             'event_type' => 'SMS_email_sent',
             'password' => $password,
@@ -115,22 +118,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_PO
         } catch (Exception $e) {
             echo "Wystąpił błąd: " . $e->getMessage();
         }
-            }
-
+    
         $readSMSsFromNokia = ReadSMSNokia($messages_count=100); //pobiera wszystkie SMSy z Nokii
-        $SMS_delivery_check = findSMSByPhoneNumber($worker_id,$nr_telefonu, $readSMSsFromNokia);  //sprawdza czy na Nokię dotarła kopia SMSa wysłanego do pracownika
+        $SMS_delivery_check = findSMSByPhoneNumber($worker_id[1][0]['id'],$nr_telefonu, $readSMSsFromNokia);  //sprawdza czy na Nokię dotarła kopia SMSa wysłanego do pracownika
         //DOPISAĆ IFA - ZE MA TO ROBIĆ JEŚLI KOPIA DOTARŁA DO NOKII
         try {
             insertIntoTable($connection, $insert_into_table, $SMS_delivery_check);  //dodaje do bazy rezultat pobierania potwierdzenia
             echo "Dane zostały dodane!";
         } catch (Exception $e) {
             echo "Wystąpił błąd: " . $e->getMessage();
-        }
             }
+    } 
+} 
 
+
+if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_potwierdzenieSMS') {  //odświeża potwierdzenie SMS
+    foreach ($table as $row) {
+        $nr_telefonu = $row['nr_telefonu'];
+        if (empty($nr_telefonu)) continue; // pomiń jeśli brak numeru telefonu
+
+        // Pobierz ID pracownika na podstawie numeru telefonu
+        $sql = "SELECT id FROM km_base.aa01_workers WHERE phone_number = '" . $nr_telefonu . "'";
+        $worker_id = fetch_data($connection, $sql);
+        if (empty($worker_id[1][0]['id'])) continue; // pomiń jeśli brak ID
+
+        $worker_id_value = $worker_id[1][0]['id'];
+
+        // Pobierz wszystkie SMSy z Nokii
+        $readSMSsFromNokia = ReadSMSNokia($messages_count = 100);
+
+        // Sprawdź, czy przyszedł SMS z potwierdzeniem
+        $SMS_delivery_check = findSMSByPhoneNumber($worker_id_value, $nr_telefonu, $readSMSsFromNokia);
+
+        // Jeśli przyszła kopia (czyli wynik nie jest pusty)
+        if (!empty($SMS_delivery_check)) {
+            $insert_into_table = 'bb01_events';
+
+            try {
+                insertIntoTable($connection, $insert_into_table, $SMS_delivery_check);
+                echo "Dane zostały dodane dla pracownika o nr: $nr_telefonu<br>";
+            } catch (Exception $e) {
+                echo "Błąd przy dodawaniu danych dla nr $nr_telefonu: " . $e->getMessage() . "<br>";
+            }
+        }
+    }
 }
-    
-    require '/home/kmadzia/www/includes/functions.php';
+
+
+
+
+
+
+
+
+
+
     //poniżej pobiera tylko dane z bazy danych, nie z sesji - pobiera info dla wszystkich pracowników w celu wyświetlenia tabeli
     $sql="select CONCAT(surname,' ',name) as nazwisko_imie,name,surname,phone_number,e_mail_address as e_address from km_base.aa01_workers";
     $workers_info= fetch_data($connection, $sql)[1];  //pobiera info o pracownikach
@@ -190,6 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_PO
 
     <form method="post">
         <button type="submit" name="action" value="reset_sesji">Resetuj</button>
+        <button type="submit" name="action" value="sprawdz_potwierdzenieSMS">Sprawdź potwierdzenie SMS</button>
     </form>               
 
 </div>
