@@ -1,0 +1,74 @@
+with ordersKM as(
+    SELECT
+        orders.serial as Zamowienie,
+        contractors.short_name as Kontrahent,
+        contractors.NIP as NIP,
+        ContractorsLocations.country as ContractorCountry,
+        orders.id as OrderID,
+        orders.created as DataZamowienia,
+        orders.items as OrderItemsJSON,
+        orders.orders_group_id as IdGrupyZamowienia,
+        Sections.Name as Miejsce,
+        Currencies.Code as CurrencyCode,
+        orders.name as Name,
+        OrdersData.contact_name OrderContactName
+    FROM
+        prosto.orders orders
+    INNER JOIN
+        prosto.contractors contractors ON orders.contractor_id = contractors.id
+    INNER JOIN
+    	prosto.contractors_locations ContractorsLocations ON contractors.contractors_location_id=ContractorsLocations.id
+    INNER JOIN
+        prosto.orders_sections OrdersSections ON orders.orders_section_id = OrdersSections.id
+    INNER JOIN
+        prosto.sections Sections ON OrdersSections.section_id = Sections.id
+    INNER JOIN 	
+    	prosto.currencies Currencies ON orders.currency_out_id = Currencies.id
+    INNER JOIN
+    	prosto.orders_data OrdersData ON orders.id = OrdersData.order_id
+    WHERE
+        orders.serial = ?
+),
+OrderItems AS (
+    SELECT
+        ordersKM.Zamowienie as Zamowienie,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.parent')) AS parent,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.name')) AS name,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.name_fakt')) AS name_fakt,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.name_fakt2')) AS name_fakt2,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.quantity')) AS quantity,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.price')) AS Price,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.total')) AS PositionTotalAmount,
+		JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.VAT')) AS VAT,
+        JSON_UNQUOTE(JSON_EXTRACT(orderItem, '$.unit')) AS unit
+    FROM ordersKM,
+         JSON_TABLE(
+             OrderItemsJSON,
+             '$.*' COLUMNS (
+                 orderItem JSON PATH '$'
+             )
+         ) AS extracted_data
+)
+SELECT
+    ordersKM.Kontrahent as Kontrahent,
+    ordersKM.NIP as NIP,
+    ordersKM.Miejsce as Miejsce,
+    DATE(ordersKM.DataZamowienia) as DataZamowienia,
+    ordersKM.Zamowienie as Zamowienie,
+    OrderItems.name as Nazwa_produktu,
+    OrderItems.name_fakt as name_fakt,
+    OrderItems.name_fakt2 as name_fakt2,
+    OrderItems.quantity as Ilosc,
+    OrderItems.price as Cena,
+ 	OrderItems.PositionTotalAmount as PositionTotalAmount,
+    ordersKM.CurrencyCode as CurrencyCode,
+    OrderItems.unit as JM,
+    ordersKM.ContractorCountry as ContractorCountry,
+    ordersKM.Name as Name,
+    ordersKM.OrderContactName OrderContactName
+FROM
+    ordersKM
+INNER JOIN
+    OrderItems ON ordersKM.Zamowienie = OrderItems.Zamowienie
+ WHERE
+    Parent = 0

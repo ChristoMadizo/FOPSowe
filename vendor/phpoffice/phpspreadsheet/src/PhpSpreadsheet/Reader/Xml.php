@@ -92,7 +92,6 @@ class Xml extends BaseReader
                 break;
             }
         }
-
         $this->fileContents = $data;
 
         return $valid;
@@ -133,8 +132,7 @@ class Xml extends BaseReader
             }
             if ($continue) {
                 $xml = @simplexml_load_string(
-                    $this->getSecurityScannerOrThrow()
-                        ->scan($data)
+                    $this->getSecurityScannerOrThrow()->scan($data)
                 );
             }
         } catch (Throwable $e) {

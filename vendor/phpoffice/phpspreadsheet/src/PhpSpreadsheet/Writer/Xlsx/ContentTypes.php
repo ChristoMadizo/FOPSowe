@@ -134,7 +134,7 @@ class ContentTypes extends WriterPart
             $mimeType = '';
 
             $drawing = $this->getParentWriter()->getDrawingHashTable()->getByIndex($i);
-            if ($drawing instanceof WorksheetDrawing) {
+            if ($drawing instanceof WorksheetDrawing && $drawing->getPath() !== '') {
                 $extension = strtolower($drawing->getExtension());
                 if ($drawing->getIsUrl()) {
                     $mimeType = image_type_to_mime_type($drawing->getType());
