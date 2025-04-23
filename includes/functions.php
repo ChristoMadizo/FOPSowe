@@ -770,25 +770,60 @@ function insertIntoTable($conn, $table, $data) {
         throw new Exception("Nie podano tabeli ani danych.");
     }
 
-    // Budowanie zapytania
+    // Pomijamy kolumnę 'id' (autoincrement)
+    $dataToCheck = $data;
+    unset($dataToCheck['id']);
+
+    // Budowanie WHERE do sprawdzenia duplikatu
+    $whereClause = [];
+    $checkTypes = "";
+    $checkValues = [];
+
+    foreach ($dataToCheck as $key => $value) {
+        $whereClause[] = "$key = ?";
+        $checkValues[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
+
+        if (is_int($value)) {
+            $checkTypes .= "i";
+        } elseif (is_float($value)) {
+            $checkTypes .= "d";
+        } else {
+            $checkTypes .= "s";
+        }
+    }
+
+    $checkSql = "SELECT 1 FROM $table WHERE " . implode(" AND ", $whereClause) . " LIMIT 1";
+    $checkStmt = $conn->prepare($checkSql);
+
+    if (!$checkStmt) {
+        throw new Exception("Błąd przygotowania zapytania SELECT: " . $conn->error);
+    }
+
+    $checkStmt->bind_param($checkTypes, ...$checkValues);
+    $checkStmt->execute();
+    $checkStmt->store_result();
+
+    if ($checkStmt->num_rows > 0) {
+        // Wiersz już istnieje – nie robimy INSERT
+        return false;
+    }
+
+    $checkStmt->close();
+
+    // Kontynuujemy INSERT jak dotychczas
     $columns = implode(", ", array_keys($data));
     $placeholders = implode(", ", array_fill(0, count($data), "?"));
-    
-    // Dynamiczne ustalanie typów dla bind_param
+
     $types = "";
+    $values = [];
     foreach ($data as $value) {
+        $values[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
         if (is_int($value)) {
-            $types .= "i"; // integer
+            $types .= "i";
         } elseif (is_float($value)) {
-            $types .= "d"; // double
-        } elseif (is_string($value)) {
-            $types .= "s"; // string
-        } elseif (is_null($value)) {
-            $types .= "s"; // null traktujemy jako string
-        } elseif ($value instanceof DateTime) {
-            $types .= "s"; // dla obiektów DateTime traktujemy jako string
+            $types .= "d";
         } else {
-            $types .= "s"; // domyślnie traktujemy wszystko jako string
+            $types .= "s";
         }
     }
 
@@ -796,27 +831,20 @@ function insertIntoTable($conn, $table, $data) {
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
-        throw new Exception("Błąd przygotowania zapytania: " . $conn->error);
+        throw new Exception("Błąd przygotowania zapytania INSERT: " . $conn->error);
     }
 
-    // Przygotowanie wartości
-    $values = array_map(function ($value) {
-        return $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value; // formatujemy DateTime na string
-    }, array_values($data));
-
-    // Bindowanie parametrów
     $stmt->bind_param($types, ...$values);
 
-    // Wykonanie zapytania
     if ($stmt->execute()) {
+        $stmt->close();
         return true;
     } else {
+        $stmt->close();
         throw new Exception("Błąd wykonania zapytania: " . $stmt->error);
     }
-
-    $stmt->close();
 }
-?>
+
 
 
 
