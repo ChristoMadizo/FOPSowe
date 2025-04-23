@@ -9,7 +9,12 @@
                 <li><a href="index.php?page=etykiety" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'etykiety') ? 'active' : ''; ?>">Wspólne etykiety</a></li>
                 <li><a href="index.php?page=faktury" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'faktury') ? 'active' : ''; ?>">Faktury</a></li>
                 <li><a href="index.php?page=bdo" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'bdo') ? 'active' : ''; ?>">BeDeO</a></li>
-                <li><a href="index.php?page=paski_wyplaty" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'paski_wyplaty') ? 'active' : ''; ?>">Paski</a></li>
+                <li>
+                    <a href="index.php?page=paski_wyplaty" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'paski_wyplaty') ? 'active' : ''; ?>">Paski</a>
+                    <ul class="submenu">
+                        <li><a href="index.php?page=dane_pracownikow" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'dane_pracownikow') ? 'active' : ''; ?>">Dane pracowników</a></li>
+                    </ul>
+                </li>
             </div>
         </ul>
     </nav>

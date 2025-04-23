@@ -65,6 +65,8 @@ footer {
 }
 
 
+
+
 ul {
     list-style-type: none; /* Usuwa kropki (oznaczenia listy) */
     margin: 0; /* Resetowanie marginesów */
@@ -77,6 +79,7 @@ ul li {
     display: inline; /* Wyświetlanie elementów w linii */
     font-size: 16px; /* Rozmiar czcionki */
     font-weight: bold; /* Pogrubienie tekstu */
+    position: relative; /* Określa kontekst dla elementów podrzędnych */
 }
 
 ul li a {
@@ -91,6 +94,32 @@ ul li a.active {
     color: #fff; /* Kolor tekstu aktywnego linku */
     background-color: #0a5831; /* Kolor tła aktywnego linku */
 }
+
+
+.submenu {
+    display: block; /* Podmenu widoczne */
+    position: absolute; /* Pozycjonowane względem rodzica */
+    top: 100%; /* Podmenu poniżej elementu nadrzędnego */
+    left: 0; /* Wyrównanie z lewej strony */
+    background-color: inherit; /* Dziedziczy tło od nadrzędnego elementu */
+    color:  #7fad29; /* Dziedziczy kolor tekstu od nadrzędnego elementu */
+    padding: 10px; /* Odstępy wewnętrzne */
+    border: 0px solid #ddd; /* Obramowanie */
+    list-style-type: none; /* Usunięcie oznaczeń listy */
+    z-index: 1000; /* Zapewnia widoczność na wierzchu */
+}
+
+.submenu a {
+    font-size: 10px; /* Ustawienie rozmiaru czcionki */
+    padding: 0px;
+}
+
+.submenu ul li a.active {
+    color: #fff; /* Kolor tekstu aktywnego linku */
+    background-color: #0a5831; /* Kolor tła aktywnego linku */
+}
+
+
 
 p {
     font-size: 20px; /* Ustala rozmiar czcionki */
