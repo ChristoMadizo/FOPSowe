@@ -57,6 +57,14 @@ if ($result) {  //zapełnia tablicę $result_all_data
 </head>
 <body>
     <p style="color: darkgreen; font-weight: bold;">Lista kodów z wyłączoną opcją Dozw.wsp.etykiety: (bez kodów z typem "Rola")</p>
+	<p style="color: gray; font-size: 12px; font-style: italic;">
+		<?php 
+			$current_date_time = date('Y-m-d H:i:s'); // Pobranie aktualnej daty i godziny
+			$date = new DateTime($current_date_time); // Utworzenie obiektu DateTime
+			$date->modify('+2 hours'); // Dodanie 2 godzin
+			echo "Ostatnie odświeżenie strony: " . $date->format('Y-m-d H:i:s'); // Wyświetlenie zmienionej daty 
+		?>
+    </p>
     <div class="content">
         <?php $table=display_table_from_array($result_all_data,['Lp','code','name','unit_code','unit_type']);
 		echo $table;

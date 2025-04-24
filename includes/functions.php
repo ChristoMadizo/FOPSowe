@@ -36,13 +36,14 @@ function executeOnVM($command) {
 function SendSMSNokia($PhoneNr,$SMScontent) {
     $result = executeOnVM('nokia send ' .$PhoneNr . ' ' .  $SMScontent);
     // Zwracanie wyniku
-    $output = [];
-    $return_var = 0;
-    if ($return_var === 0) {
-        return implode("\n", $output); // Wyjście polecenia
-    } else {
-        return "Wystąpił błąd podczas wykonania polecenia. Kod błędu: $return_var";
-    }
+    //$output = [];
+    //$return_var = 0;
+    //if ($result === 0) {
+    //    return implode("\n", $output); // Wyjście polecenia
+    //} else {
+    //    return "Wystąpił błąd podczas wykonania polecenia. Kod błędu: $return_var";
+    //}
+    return $result;
 }
 ?>
 
@@ -60,30 +61,65 @@ function ReadSMSNokia($messages_count) {
         // Inicjalizacja tablicy na wiadomości
         $messages = [];
         
-        // Przetwarzanie wyników, zakładając, że każda wiadomość to 3 linie
-        for ($i = 0; $i < count($lines); $i += 3) {
-            // Sprawdzanie, czy mamy co najmniej 3 linie na jedną wiadomość
-            if (isset($lines[$i], $lines[$i+1], $lines[$i+2])) {
-                // Rozdzielanie na części
-                $SMS_phone_number = trim($lines[$i]);
-                $SMS_date_time = trim($lines[$i+1]);
-                $SMS_message_content = trim($lines[$i+2]);
+        // Tymczasowe przechowywanie wiadomości
+        $current_message = [];
 
-                // Konwersja daty
-                $date = DateTime::createFromFormat('Y.m.d H:i:s', $SMS_date_time);
-                if ($date) {
-                    $SMS_date_time = $date->format('Y-m-d H:i:s'); // Standardowy format
-                } else {
-                    $SMS_date_time = null; // W przypadku błędu, ustawiamy na null
+        // Przetwarzanie wyników
+        foreach ($lines as $line) {
+            // Usuwamy nadmiarowe białe znaki
+            $line = trim($line);
+
+            // Jeśli linia jest pusta, kończymy obecny rekord
+            if (empty($line) && !empty($current_message)) {
+                // Sprawdzamy, czy rekord ma wszystkie 3 pola
+                if (count($current_message) === 3) {
+                    // Rozdzielanie na części
+                    $SMS_phone_number = trim($current_message[0]);
+                    $SMS_date_time = trim($current_message[1]);
+                    $SMS_message_content = trim($current_message[2]);
+
+                    // Konwersja daty
+                    $date = DateTime::createFromFormat('Y.m.d H:i:s', $SMS_date_time);
+                    if ($date) {
+                        $SMS_date_time = $date->format('Y-m-d H:i:s'); // Standardowy format
+                    } else {
+                        $SMS_date_time = null; // W przypadku błędu, ustawiamy na null
+                    }
+
+                    // Dodawanie wiadomości do tablicy
+                    $messages[] = [
+                        'phone_number' => $SMS_phone_number,
+                        'date_time' => $SMS_date_time,
+                        'message_content' => $SMS_message_content
+                    ];
                 }
 
-                // Dodawanie wiadomości do tablicy
-                $messages[] = [
-                    'phone_number' => $SMS_phone_number,
-                    'date_time' => $SMS_date_time,
-                    'message_content' => $SMS_message_content
-                ];
+                // Reset tymczasowej wiadomości
+                $current_message = [];
+            } else if (!empty($line)) {
+                // Dodajemy linię do aktualnej wiadomości
+                $current_message[] = $line;
             }
+        }
+
+        // Ostatnia wiadomość (jeśli brak pustej linii na końcu)
+        if (!empty($current_message) && count($current_message) === 3) {
+            $SMS_phone_number = trim($current_message[0]);
+            $SMS_date_time = trim($current_message[1]);
+            $SMS_message_content = trim($current_message[2]);
+
+            $date = DateTime::createFromFormat('Y.m.d H:i:s', $SMS_date_time);
+            if ($date) {
+                $SMS_date_time = $date->format('Y-m-d H:i:s');
+            } else {
+                $SMS_date_time = null;
+            }
+
+            $messages[] = [
+                'phone_number' => $SMS_phone_number,
+                'date_time' => $SMS_date_time,
+                'message_content' => $SMS_message_content
+            ];
         }
 
         // Zwracamy tablicę z wiadomościami
@@ -92,12 +128,13 @@ function ReadSMSNokia($messages_count) {
         return "Brak danych z komendy.";
     }
 }
+
 ?>
 
 
 
 <?php
-function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {
+function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
     // Flaga, która wskazuje, czy znaleziono SMS z zawartością numeru telefonu
     $found = false;
 
@@ -136,6 +173,40 @@ function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {
 ?>
 
 
+<?php
+function findAnswerSMSwithEmailAddress($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
+    // Flaga, która wskazuje, czy znaleziono SMS z zawartością numeru telefonu
+    $found = false;
+
+    // Iterowanie po tablicy $trescSMS
+    foreach ($trescSMS as $sms) {
+        // Sprawdzamy, czy w treści wiadomości (message_content) znajduje się numer telefonu
+        if (strpos($sms['message_content'], $nr_telefonu) !== false) {
+
+            
+            // Ustawiamy flagę na true i przerywamy pętlę
+            $SMS_confirmation_data = [  //tworzy dane do dodania do bazy danych - event potwierdzenia smsa
+                'worker_id' => $worker_id,
+                'date' => $sms['date_time'], // Użycie obiektu DateTime
+                'event_type' => 'SMS_delivery_confirmation',
+                'password' => '',  //nie potrzebujemy tu hasła
+                'remarks1' => '',
+                'remarks2' => ''
+            ];
+            return $SMS_confirmation_data;
+
+            break;
+        }
+    }
+
+    // Jeśli nie znaleziono wiadomości, wyświetlamy komunikat
+    if (!$found) {
+        echo "Nie znaleziono SMS zawierającego numer telefonu $nr_telefonu.\n";
+    }
+}
+
+
+?>
 
 
 
@@ -330,8 +401,8 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function sendEmail($to, $subject, $body, $attachment_path = null) {
-    echo "wchodze do funkcji";
+function sendEmail($to, $subject, $body, $attachment_path = null, $is_html = false) {
+    echo "wchodzę do funkcji";
     $mail = new PHPMailer(true);
 
     try {
@@ -344,9 +415,22 @@ function sendEmail($to, $subject, $body, $attachment_path = null) {
         $mail->Port = 587;
 
         $mail->setFrom('k.madzia@fops.pl', 'FOPS');
-        $mail->addAddress($to);
 
+        // Rozdzielenie adresów i dodanie każdego za pomocą addAddress
+        $email_array = explode(';', $to); // Rozdzielamy adresy po ŚREDNIKU
+        foreach ($email_array as $email) {
+            $mail->addAddress(trim($email)); // Usuwamy nadmiarowe białe znaki
+        }
+
+        $mail->CharSet = 'UTF-8'; // Kodowanie znaków
         $mail->Subject = $subject;
+
+        if ($is_html) {
+            $mail->isHTML(true); // Treść jako HTML
+        } else {
+            $mail->isHTML(false); // Treść jako zwykły tekst
+        }
+
         $mail->Body = $body;
 
         if ($attachment_path && file_exists($attachment_path)) {
@@ -359,6 +443,8 @@ function sendEmail($to, $subject, $body, $attachment_path = null) {
         echo "Błąd wysyłania wiadomości: {$mail->ErrorInfo}";
     }
 }
+
+
 
 
 ?>
@@ -846,7 +932,72 @@ function insertIntoTable($conn, $table, $data) {
 }
 
 
+?>
 
+<?php
+function updateTable($conn, $table, $data, $where) {
+    if (!$conn) {
+        die("Brak połączenia z bazą danych.");
+    }
+
+    if (empty($table) || empty($data) || empty($where)) {
+        throw new Exception("Nie podano tabeli, danych do aktualizacji lub warunku WHERE.");
+    }
+
+    // Przygotowanie części SET
+    $setClause = [];
+    $types = "";
+    $values = [];
+
+    foreach ($data as $key => $value) {
+        $setClause[] = "$key = ?";
+        $values[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
+
+        if (is_int($value)) {
+            $types .= "i";
+        } elseif (is_float($value)) {
+            $types .= "d";
+        } else {
+            $types .= "s";
+        }
+    }
+
+    // Przygotowanie części WHERE
+    $whereClause = [];
+    foreach ($where as $key => $value) {
+        $whereClause[] = "$key = ?";
+        $values[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
+
+        if (is_int($value)) {
+            $types .= "i";
+        } elseif (is_float($value)) {
+            $types .= "d";
+        } else {
+            $types .= "s";
+        }
+    }
+
+    // Budowanie zapytania SQL
+    $sql = "UPDATE $table SET " . implode(", ", $setClause) . " WHERE " . implode(" AND ", $whereClause);
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        throw new Exception("Błąd przygotowania zapytania UPDATE: " . $conn->error);
+    }
+
+    // Podpięcie wartości
+    $stmt->bind_param($types, ...$values);
+
+    if ($stmt->execute()) {
+        $stmt->close();
+        return true;
+    } else {
+        $stmt->close();
+        throw new Exception("Błąd wykonania zapytania: " . $stmt->error);
+    }
+}
+
+?>
 
 
 

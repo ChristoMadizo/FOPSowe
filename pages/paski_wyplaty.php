@@ -23,7 +23,7 @@ if (!isset($_SESSION['lista_pracownikow'])) {
     $result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
     $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
 }
-$lista_pracownikow = $_SESSION['lista_pracownikow'];
+$lista_pracownikow = $_SESSION['lista_pracownikow'];   //czyli w tej zmiennej mamy listę pracowników pobraną z plików pdf.
 
 $table = [];
 foreach ($lista_pracownikow as $index => $pracownik) {
@@ -41,7 +41,7 @@ foreach ($lista_pracownikow as $index => $pracownik) {
 
 $connection = db_connect_mysqli_KM_VM();
 
-//pobiera info o pracownikach z bazy danych
+//pobiera info o pracownikach z bazy danych - żeby do listy pracowników pobranych z plików pdf dodać info o adresie i telefonie
 $sql = "select 
 CONCAT(surname,' ',name) as nazwisko_imie, 
 name,
@@ -55,7 +55,7 @@ from km_base.aa01_workers aa01";
 
 $workers_info = fetch_data($connection, $sql)[1]; // Pobieranie danych o pracownikach
 
-
+/*
 foreach ($table as $index => $row) {  //ładuje dane do tabeli
     if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
         // Dodawanie danych do tabeli
@@ -65,7 +65,24 @@ foreach ($table as $index => $row) {  //ładuje dane do tabeli
         $table[$index]['Last_SMS_confirmation_date'] = $workers_info[0]['Last_SMS_confirmation_date'];
 
     }
+}*/
+
+// Łączenie danych
+foreach ($table as &$employee) {
+    // Szukamy pracownika w $workers_info na podstawie 'nazwisko_imię'
+    foreach ($workers_info as $info) {
+        if ($employee['nazwisko_imie'] === $info['nazwisko_imie']) {
+            // Dodajemy dane z $workers_info do $table
+            $employee['adres_email'] = $info['e_address'];
+            $employee['nr_telefonu'] = $info['phone_number'];
+            $employee['Last_SMS_Email_date'] = $info['Last_SMS_Email_date'];
+            $employee['Last_SMS_confirmation_date'] = $info['Last_SMS_confirmation_date'];
+            break; // Przerywamy pętlę, gdy znajdziemy odpowiednik
+        }
+    }
 }
+
+
 
 
 
@@ -207,7 +224,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_potwierdzenieSMS') 
             <tr>
                 <!-- Kolumny danych -->
                 <?php foreach ($row as $key => $value): ?>
-                    <td><?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($value??'', ENT_QUOTES, 'UTF-8'); ?></td>
                 <?php endforeach; ?>
 
                 <!-- Kolumna z przyciskami akcji -->
@@ -217,12 +234,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_potwierdzenieSMS') 
                         <input type="hidden" name="Lp" value="<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="nazwisko_imie" value="<?php echo htmlspecialchars($row['nazwisko_imie'], ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="nr_telefonu" value="<?php echo htmlspecialchars($row['nr_telefonu'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email']??'brak adresu', ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="sciezka_pdf" value="<?php echo htmlspecialchars($row['sciezka_pdf'], ENT_QUOTES, 'UTF-8'); ?>">  <!-- uzupełnienie scieżki do pliku pdf -->
-                        
+    
                         <!-- Przyciski akcji -->
-                        <button type="submit" name="action" value="sms">Wyślij SMS</button>
-                        <button type="submit" name="action" value="email">Wyślij E-mail</button>
+                      <!--  <button type="submit" name="action" value="sms">Wyślij SMS</button>
+                        <button type="submit" name="action" value="email">Wyślij E-mail</button>   -->
                         <button type="submit" name="action" value="email_and_SMS">Wyślij E-mail + SMS</button>
                     </form>
                 </td>
