@@ -1,28 +1,58 @@
 <?php
-
 session_start();
+require '/home/kmadzia/www/vendor/autoload.php';
+require '/home/kmadzia/www/includes/functions.php';
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// Funkcja wyświetlająca formularz WSKAŻ_PLIK_PDF
+function wyswietl_formularz_pobierania_plikuPDF() {
+    echo '<form method="POST" action="" enctype="multipart/form-data">
+    <div class="content">
+        <label for="pdf-file">Wybierz plik PDF:</label>
+        <input type="file" id="pdf-file" name="pdf_file" accept=".pdf">
+        <button type="submit" name="submit">Prześlij</button>
+    </div>
+    </form>';
+}
+
+// Sprawdzamy, czy został przesłany plik PDF
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['pdf_file'])) {
+    $path_origin = $_FILES['pdf_file']['tmp_name']; // Tymczasowa ścieżka do pliku
+    $path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu';
+
+    // Dzielenie PDF i uzyskiwanie nazwisk
+    $result = splitPdf($path_origin, $path_destination);
+    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
+
+    echo 'Plik został przetworzony!';
+    // Możesz tutaj przekierować użytkownika do widoku tabeli lub kolejnych kroków.
+} else {
+
+    // Wyświetlamy formularz, jeśli plik nie został przesłany
+    wyswietl_formularz_pobierania_plikuPDF();
+}
+
+    //gdy kliknięto reset sesji
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_sesji') {
     // Reset sesji
     unset($_SESSION['lista_pracownikow']);
     exit("Sesja została zresetowana, wykonanie skryptu zakończone.");
 }
 
-require '/home/kmadzia/www/vendor/autoload.php';
-require '/home/kmadzia/www/includes/functions.php';
-
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 
 $path_origin = '/home/kmadzia/www/pages/PASKI_WYPLATY/TestySPLIT/joined.pdf';
-$path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu';
+$path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu'; 
 
 
 // Sprawdzanie czy lista pracowników jest w sesji - jeśli to stara sesja, to działamy na starych plikach i danych, 
 // jeśli sesja jest pusta, to tniemy pdf i tworzymy nową sesję
+
 if (!isset($_SESSION['lista_pracownikow'])) {
     $result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
     $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
 }
+
 $lista_pracownikow = $_SESSION['lista_pracownikow'];   //czyli w tej zmiennej mamy listę pracowników pobraną z plików pdf.
 
 $table = [];
@@ -69,7 +99,7 @@ foreach ($table as $index => $row) {  //ładuje dane do tabeli
 
 // Łączenie danych
 foreach ($table as &$employee) {
-    // Szukamy pracownika w $workers_info na podstawie 'nazwisko_imię'
+    // Szukamy pracownika w $workers_info na podstawie 'nazwisko_imię' - bo tylko takie dane da się wyciągnąć z PDF
     foreach ($workers_info as $info) {
         if ($employee['nazwisko_imie'] === $info['nazwisko_imie']) {
             // Dodajemy dane z $workers_info do $table
@@ -81,9 +111,6 @@ foreach ($table as &$employee) {
         }
     }
 }
-
-
-
 
 
 // Obsługa przycisków
@@ -182,17 +209,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_potwierdzenieSMS') 
 }
 
 
-
-
-
-
-
-
-
-
-    //poniżej pobiera tylko dane z bazy danych, nie z sesji - pobiera info dla wszystkich pracowników w celu wyświetlenia tabeli
-    $sql="select CONCAT(surname,' ',name) as nazwisko_imie,name,surname,phone_number,e_mail_address as e_address from km_base.aa01_workers";
-    $workers_info= fetch_data($connection, $sql)[1];  //pobiera info o pracownikach
+    //poniżej pobiera tylko dane z BAZY danych, nie z sesji - pobiera info dla wszystkich pracowników w celu wyświetlenia tabeli
 
     // Iteracja przez tabelę pracowników - buduje TABELĘ Z DANYMI
     foreach ($table as $index => $row) {
