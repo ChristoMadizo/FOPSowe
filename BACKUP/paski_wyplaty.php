@@ -16,61 +16,47 @@ function wyswietl_formularz_pobierania_plikuPDF() {
     </form>';
 }
 
-//$_FILES['pdf_file']['name']=$_SESSION['pdf_file']??'';
-//$_FILES['pdf_file']['tmp_name']=$_SESSION['pdf_file']??'';
-
-
-
-// Sprawdzamy, czy został przesłany plik PDF - jeśli tak, to pobieramy nazwę i temp ścieżkę, jeśli nie to tylko wyświetlamy formularz do wskazania pliku
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf_file'])) {
-    $_SESSION['pdf_file'] = $_FILES['pdf_file']['name']; // zapisuję zmienną z FILES do sesji, żeby była dostępna w następnym wywołaniu
+// Sprawdzamy, czy został przesłany plik PDF
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['pdf_file'])) {
     $path_origin = $_FILES['pdf_file']['tmp_name']; // Tymczasowa ścieżka do pliku
     $path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu';
 
     // Dzielenie PDF i uzyskiwanie nazwisk
-    //$result = splitPdf($path_origin, $path_destination);
-    //$_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
+    $result = splitPdf($path_origin, $path_destination);
+    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
 
     echo 'Plik został przetworzony!';
     // Możesz tutaj przekierować użytkownika do widoku tabeli lub kolejnych kroków.
+} else {
 
-} elseif (!isset($_SESSION['lista_pracownikow']) || !empty($_SESSION['lista_pracownikow']['error'])) {  //musiałem dodać warunek z "error"
-    //bo z jakiegoś powodu $_SESSION['lista_pracownikow']['error'] od razu na początku skryptu zawierała zawartość "katalog nie istnieje"
     // Wyświetlamy formularz, jeśli plik nie został przesłany
-    unset($_SESSION['lista_pracownikow']);    //resetujemy sesję
+    unset($_SESSION['lista_pracownikow']);
     wyswietl_formularz_pobierania_plikuPDF();
-    exit("");
-
 }
 
     //gdy kliknięto reset sesji
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_sesji') {
     // Reset sesji
     unset($_SESSION['lista_pracownikow']);
-    wyswietl_formularz_pobierania_plikuPDF();
     exit("Sesja została zresetowana, wykonanie skryptu zakończone.");
 }
 
 
-//$path_origin = '/home/kmadzia/www/pages/PASKI_WYPLATY/TestySPLIT/joined.pdf';
-//$path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu'; 
+$path_origin = '/home/kmadzia/www/pages/PASKI_WYPLATY/TestySPLIT/joined.pdf';
+$path_destination = '/home/kmadzia/www/pages/PASKI_WYPLATY/PDFyDoOdczytu'; 
 
 
 // Sprawdzanie czy lista pracowników jest w sesji - jeśli to stara sesja, to działamy na starych plikach i danych, 
 // jeśli sesja jest pusta, to tniemy pdf i tworzymy nową sesję
 
-if (!isset($_SESSION['lista_pracownikow'])) {         
+/*if (!isset($_SESSION['lista_pracownikow'])) {         TYMCZASOWO WYWALONE!!!!!!!!!!!!!!
     $result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
-    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);  //pobiera listę pracowników z pdf
-    $_SESSION['plik_pdf_odczytany']=1;
-}
-
-//$result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
-//$_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
+    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
+}*/
 
 $lista_pracownikow = $_SESSION['lista_pracownikow'];   //czyli w tej zmiennej mamy listę pracowników pobraną z plików pdf.
 
-$table = [];   //buduje tabelę z listy pracowników, którą pobrał z plików pdf
+$table = [];
 foreach ($lista_pracownikow as $index => $pracownik) {
     // Budowanie tabeli
     $table[] = [
@@ -100,8 +86,19 @@ from km_base.aa01_workers aa01";
 
 $workers_info = fetch_data($connection, $sql)[1]; // Pobieranie danych o pracownikach
 
+/*
+foreach ($table as $index => $row) {  //ładuje dane do tabeli
+    if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
+        // Dodawanie danych do tabeli
+        $table[$index]['adres_email'] = $workers_info[0]['e_address'];
+        $table[$index]['nr_telefonu'] = $workers_info[0]['phone_number'];
+        $table[$index]['Last_SMS_Email_date'] = $workers_info[0]['Last_SMS_Email_date'];
+        $table[$index]['Last_SMS_confirmation_date'] = $workers_info[0]['Last_SMS_confirmation_date'];
 
-// Łączenie danych - do danych pobranych z plików pdf dodajemy dane z bazy danych (adres email i telefon)
+    }
+}*/
+
+// Łączenie danych
 foreach ($table as &$employee) {
     // Szukamy pracownika w $workers_info na podstawie 'nazwisko_imię' - bo tylko takie dane da się wyciągnąć z PDF
     foreach ($workers_info as $info) {
@@ -118,7 +115,7 @@ foreach ($table as &$employee) {
 
 
 // Obsługa przycisków
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && ($_POST['action'] === 'sms' || $_POST['action'] === 'email' || $_POST['action'] === 'email_and_SMS' )) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] === 'sms' || $_POST['action'] === 'email' || $_POST['action'] === 'email_and_SMS' )) {
     $Lp = $_POST['Lp']; // Pobranie numeru wiersza
     $nazwisko_imie = $_POST['nazwisko_imie'];
     $nr_telefonu = $_POST['nr_telefonu'];
@@ -214,16 +211,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_potwierdzenieSMS') 
 
 
 //poniżej pobiera tylko dane z BAZY danych, nie z sesji - pobiera info dla wszystkich pracowników w celu wyświetlenia tabeli
-// Iteracja przez tabelę pracowników - buduje TABELĘ Z DANYMI
 
-/*foreach ($table as $index => $row) {
+// Iteracja przez tabelę pracowników - buduje TABELĘ Z DANYMI
+foreach ($table as $index => $row) {
 // Dopasowanie nazwiska i imienia
 if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
     // Dodaj dane do wiersza tabeli
     $table[$index]['adres_email'] = $workers_info[0]['e_address'];
     $table[$index]['nr_telefonu'] = $workers_info[0]['phone_number'];
 }
-}*/
+}
 
     //$table_for_display=display_table_from_array($table,['nazwisko_imie','nr_telefonu','adres_email']);  - to już NIAKTUALNE, BO WYŚWIETLAMY FORMULARZ Z PRZYCISKAMI
  
