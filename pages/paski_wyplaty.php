@@ -38,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf_file'])) {
     //bo z jakiegoś powodu $_SESSION['lista_pracownikow']['error'] od razu na początku skryptu zawierała zawartość "katalog nie istnieje"
     // Wyświetlamy formularz, jeśli plik nie został przesłany
     unset($_SESSION['lista_pracownikow']);    //resetujemy sesję
+
+    !empty($path_destination) && array_map('unlink', glob($path_destination . '/*'));//KASUJE wszystkie PLIKI w $path_destination
+
     wyswietl_formularz_pobierania_plikuPDF();
     exit("");
 
@@ -47,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf_file'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_sesji') {
     // Reset sesji
     unset($_SESSION['lista_pracownikow']);
+    !empty($path_destination) && array_map('unlink', glob($path_destination . '/*')); //KASUJE wszystkie PLIKI w $path_destination
     wyswietl_formularz_pobierania_plikuPDF();
     exit("Sesja została zresetowana, wykonanie skryptu zakończone.");
 }
@@ -62,8 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if (!isset($_SESSION['lista_pracownikow'])) {         
     $result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
     $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);  //pobiera listę pracowników z pdf
-    $_SESSION['plik_pdf_odczytany']=1;
-}
+}  
 
 //$result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
 //$_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
@@ -78,7 +81,7 @@ foreach ($lista_pracownikow as $index => $pracownik) {
         'nazwisko_imie' => $pracownik['nazwisko_imie'],
         'nr_telefonu' => '',
         'adres_email' => '',
-        'sciezka_pdf' => $pracownik['sciezka_pdf'],
+    //    'sciezka_pdf' => $pracownik['sciezka_pdf'],
         'Last_SMS_Email_date'=>'',
         'Last_SMS_confirmation_date'=>''
     ];
@@ -231,37 +234,44 @@ if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
 <!--*********************************WYŚWIETLANIE STRONY*************************************************************  -->
 
 <div class="content">
-    <table border="1">
+    <table border="1"">
         <tr>
             <!-- Nagłówki tabeli -->
             <?php foreach (array_keys($table[0]) as $column_name): ?>
-                <th><?php echo htmlspecialchars($column_name, ENT_QUOTES, 'UTF-8'); ?></th>
+                <th>
+                    <?php if ($column_name === 'Last_SMS_confirmation_date'): ?>
+                        <form method="post">
+                            <button type="submit" name="action" value="refresh_SMS" style="width: 80%; background-color:rgb(131, 194, 102);">
+                                Odśwież SMS
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <?php echo htmlspecialchars($column_name, ENT_QUOTES, 'UTF-8'); ?>
+                    <?php endif; ?>
+                </th>
             <?php endforeach; ?>
-            <th>Akcja</th>
+            <th style="min-width: 130px;">Akcja</th>
         </tr>
 
         <!-- Wiersze danych -->
         <?php foreach ($table as $row): ?>
-            <tr>
+            <tr style="text-align: center; max-width: 200px;">
                 <!-- Kolumny danych -->
-                <?php foreach ($row as $key => $value): ?>
-                    <td><?php echo htmlspecialchars($value??'', ENT_QUOTES, 'UTF-8'); ?></td>
+                <?php foreach ($row as $key => $value): ?>       
+                    <td><?php echo htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8'); ?></td>                   
                 <?php endforeach; ?>
 
                 <!-- Kolumna z przyciskami akcji -->
                 <td>
                     <form method="post">
-                        <!-- Przekazanie wszystkich danych wiersza -->
                         <input type="hidden" name="Lp" value="<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="nazwisko_imie" value="<?php echo htmlspecialchars($row['nazwisko_imie'], ENT_QUOTES, 'UTF-8'); ?>">
                         <input type="hidden" name="nr_telefonu" value="<?php echo htmlspecialchars($row['nr_telefonu'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email']??'brak adresu', ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="sciezka_pdf" value="<?php echo htmlspecialchars($row['sciezka_pdf'], ENT_QUOTES, 'UTF-8'); ?>">  <!-- uzupełnienie scieżki do pliku pdf -->
-    
+                        <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email'] ?? 'brak adresu', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="sciezka_pdf" value="<?php echo htmlspecialchars($row['sciezka_pdf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">  
+
                         <!-- Przyciski akcji -->
-                      <!--  <button type="submit" name="action" value="sms">Wyślij SMS</button>
-                        <button type="submit" name="action" value="email">Wyślij E-mail</button>   -->
-                        <button type="submit" name="action" value="email_and_SMS">Wyślij E-mail + SMS</button>
+                        <button type="submit" name="action" value="email_and_SMS">E-mail + SMS</button>
                     </form>
                 </td>
             </tr>
@@ -269,10 +279,9 @@ if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
     </table>
 
     <form method="post">
-        <button type="submit" name="action" value="reset_sesji">Resetuj</button>
-        <button type="submit" name="action" value="sprawdz_potwierdzenieSMS">Sprawdź potwierdzenie SMS</button>
-    </form>               
-
+        <button type="submit" name="action" value="reset_sesji" style="background-color: lightcoral;">Resetuj</button>
+    </form>
 </div>
+
 
 

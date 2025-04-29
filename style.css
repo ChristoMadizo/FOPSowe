@@ -135,9 +135,39 @@ button {
     left: 10px;
     height: 40px;
     border: 1px solid #000;
-    background-color: #f0f0f0;
+    background-color: #b8c9ec;
     color: #333;
-    padding: 10px 20px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.1s ease, box-shadow 0.1s ease;
+    box-shadow: none;
+}
+
+.button_bottom {
+    position: relative;
+    top: 10px; /* Ustawienie przycisku w górnym obrzeżu */  
+    left: 10px;
+    height: 40px;
+    border: 1px solid #000;
+    background-color: #d3b681;
+    color: #333;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.1s ease, box-shadow 0.1s ease;
+    box-shadow: none;
+}
+
+.button_header {
+    position: relative;
+    top: 10px; /* Ustawienie przycisku w górnym obrzeżu */  
+    left: 10px;
+    height: 40px;
+    border: 1px solid #000;
+    background-color: #d3b681;
+    color: #333;
+    padding: 5px 10px;
     border-radius: 5px;
     cursor: pointer;
     transition: transform 0.1s ease, background-color 0.1s ease, box-shadow 0.1s ease;

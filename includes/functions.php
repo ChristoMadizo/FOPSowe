@@ -284,16 +284,36 @@ function db_connect() {
 
 
 <?php  //zwraca zarówno obiekt jak i gotowe dane
-function fetch_data($conn, $sql) {
-    $result = $conn->query($sql);
-    if ($result) {
-        // Zwraca tablicę z dwoma elementami
-        return [
-            $result,                           // Pierwszy element - obiekt wynikowy
-            $data_table=$result->fetch_all(MYSQLI_ASSOC)   // Drugi element - tablica danych
-        ];
+function fetch_data($connection, $sql) {
+  
+    if (is_resource($connection)) {  // Sprawdzenie, czy connection jest zasobem (Firebird) 
+        // Użycie ibase_query() dla zasobu
+        $result = ibase_query($connection, $sql);
+    } else {
+        // Użycie query() dla obiektu (np. mysqli)
+        $result = $connection->query($sql); // dla mysqli
     }
-    return null;
+
+    if (!$result) {
+        die("Błąd zapytania: " . ibase_errmsg()); // Możesz dostosować tę funkcję, aby obsługiwała różne typy błędów
+    }
+
+    $data = [];
+
+    // Przetwarzanie wyników
+    if (is_resource($result)) {
+        // Dla Firebird (ibase_query)
+        while ($row = ibase_fetch_assoc($result)) {
+            $data[] = $row; // Dodajemy każdy wiersz do tablicy
+        }
+    } else {
+        // Dla MySQL (mysqli query)
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row; // Dodajemy każdy wiersz do tablicy
+        }
+    }
+
+    return $data; // Zwracamy tablicę z danymi
 }
 ?>
 
@@ -542,18 +562,18 @@ function executeSQL($connection, $filePath, $param = null) {
 }
 
 
-function db_connect_firebird() {
+function db_connect_firebird_FAKT_LIVE() {
     // Parametry połączenia
-    $host = '192.168.101.79'; // Adres IP serwera
+    $host = 'localhost'; // Adres IP serwera Windows, gdzie działa Firebird
     $port = '3050'; // Port Firebird
-    $database_path = 'c:\\fakt95\\0002\\0002BAZA.FDB'; // Ścieżka do pliku bazy danych
-    $username = 'KRZYSIEK'; // Nazwa użytkownika
-    $password = 'Bielawa5'; // Hasło
+    $database_path = '/opt/firebird/FAKT_LIVE_COPY/0002BAZA.FDB'; // Ścieżka lokalna na Linux (zmapowana)
+    $username = 'KRZYSIEK'; // Użytkownik bazy danych Firebird
+    $password = 'Bielawa55'; // Hasło bazy danych Firebird
 
     // Tworzenie stringa połączenia
     $connection_string = "{$host}/{$port}:{$database_path}";
 
-    // Próba połączenia
+    // Próba połączenia z serwerem Firebird
     $connection = ibase_connect($connection_string, $username, $password);
 
     if (!$connection) {
@@ -565,6 +585,12 @@ function db_connect_firebird() {
     echo "Połączono z bazą danych Firebird!";
     return $connection;
 }
+
+
+
+
+
+
 
 
 function db_connect_firebirdPDO() {

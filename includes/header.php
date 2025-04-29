@@ -15,6 +15,7 @@
                         <li><a href="index.php?page=dane_pracownikow" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'dane_pracownikow') ? 'active' : ''; ?>">Dane pracowników</a></li>
                     </ul>
                 </li>
+                <li><a href="index.php?page=naleznosci" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'naleznosci') ? 'active' : ''; ?>">Naleznosci</a></li>
             </div>
         </ul>
     </nav>

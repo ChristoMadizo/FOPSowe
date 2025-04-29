@@ -1,12 +1,15 @@
 <?php
-require_once 'vendor/setasign/fpdf/fpdf.php';
-require_once 'vendor/setasign/fpdi/src/autoload.php';
+session_start();
+require '/home/kmadzia/www/vendor/autoload.php';
+require '/home/kmadzia/www/includes/functions.php';
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-use setasign\Fpdi\Fpdi;
 
-$pdf = new Fpdi();
-$pdf->AddPage();
-$pdf->SetFont('Arial', 'B', 16);
-$pdf->Cell(40, 10, 'Hello FPDI!');
-$pdf->Output();
+$connection = ibase_connect('192.168.101.79/3050:C:\fakt95\0002\0002BAZA.FDB', 'krzysiek', 'Bielawa55');
+if ($connection) {
+    echo "Połączono pomyślnie!";
+} else {
+    echo "Błąd: " . ibase_errmsg();
+}
 ?>
