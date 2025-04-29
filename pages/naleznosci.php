@@ -13,7 +13,10 @@ $faktury_zaplaty_info = fetch_data($connection, $sql); //
 
 $table = [];   //buduje tabelę z danymi o fakturach
 
-$kolumny_do_zaczytania = ['KONTRAHENT','WALUTA']; // Kolumny do zaczytania
+$kolumny_do_zaczytania = ['NAZWA','NUMERFAKTURY','WALUTA','UWAGI','BRUTTO_PLN','BRUTTO_WAL','DATA_SPRZED']; // Kolumny do zaczytania
+
+
+list($result, $faktury_zaplaty_info) = fetch_data($connection, $sql); // <- poprawne wyciągnięcie danych (destrukturyzacja)
 
 foreach ($faktury_zaplaty_info as $row) {
     $row_data = []; // Nowa tablica do przechowywania wiersza

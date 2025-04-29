@@ -285,36 +285,35 @@ function db_connect() {
 
 <?php  //zwraca zarówno obiekt jak i gotowe dane
 function fetch_data($connection, $sql) {
-  
-    if (is_resource($connection)) {  // Sprawdzenie, czy connection jest zasobem (Firebird) 
-        // Użycie ibase_query() dla zasobu
+    if (is_resource($connection)) {
+        // Dla Firebird
         $result = ibase_query($connection, $sql);
-    } else {
-        // Użycie query() dla obiektu (np. mysqli)
-        $result = $connection->query($sql); // dla mysqli
-    }
+        if (!$result) {
+            die("Błąd zapytania (Firebird): " . ibase_errmsg());
+        }
 
-    if (!$result) {
-        die("Błąd zapytania: " . ibase_errmsg()); // Możesz dostosować tę funkcję, aby obsługiwała różne typy błędów
-    }
-
-    $data = [];
-
-    // Przetwarzanie wyników
-    if (is_resource($result)) {
-        // Dla Firebird (ibase_query)
+        $data = [];
         while ($row = ibase_fetch_assoc($result)) {
-            $data[] = $row; // Dodajemy każdy wiersz do tablicy
+            $data[] = $row;
         }
-    } else {
-        // Dla MySQL (mysqli query)
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row; // Dodajemy każdy wiersz do tablicy
-        }
-    }
 
-    return $data; // Zwracamy tablicę z danymi
+        return [$result, $data];
+
+    } elseif (is_object($connection)) {
+        // Dla MySQLi
+        $result = $connection->query($sql);
+        if (!$result) {
+            die("Błąd zapytania (MySQL): " . $connection->error);
+        }
+
+        $data = $result->fetch_all(MYSQLI_ASSOC);
+        return [$result, $data];
+
+    } else {
+        die("Nieprawidłowy typ połączenia");
+    }
 }
+
 ?>
 
 

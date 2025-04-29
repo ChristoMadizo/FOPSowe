@@ -66,7 +66,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_odpowiedzi') {  //o
       
 
 
-$workers_info = fetch_data($connection, $sql)[1]; // Pobieranie danych o pracownikach
+//$workers_info = fetch_data($connection, $sql)[1]; // Pobieranie danych o pracownikach
 
 
 

@@ -15,7 +15,7 @@
         $command = $scriptPath;    // $nodePath . ' ' . $scriptPath;
 
         // Otwieranie procesu
-        $process = popen($command, 'r'); // Otwiera strumień do czytania wyjścia z Node.js
+        $process = popen($command, 'r'); // Otwiera strumień do czytania wyjścia z Node.js - URUCHAMIA SKRYPT JS (LOGOWANIE)
 
         // Tablica asocjacyjna czujników
          $czujniki = 
