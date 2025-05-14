@@ -1,19 +1,23 @@
 <?php
-require '/home/kmadzia/www/vendor/autoload.php';
-require '/home/kmadzia/www/includes/functions.php';
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-$file_path = "/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/faktura.csv";
-$csv_file = fopen($file_path, "w");
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    file_put_contents('/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/debug.log', print_r($_POST, true));
+    
+    if (!empty($_POST["csv_data"])) {
+        $csv_data = $_POST["csv_data"];
+        $file_path = "/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/faktura.csv";
 
-foreach ($data["zamowienia"] as $zamowienie) {
-    fputcsv($csv_file, [$zamowienie["lp"], $zamowienie["opis"], $zamowienie["ilosc"], $zamowienie["jednostka_miary"], $zamowienie["cena"], $zamowienie["stawka_vat"], $zamowienie["wartosc_netto"], $zamowienie["vat"], $zamowienie["wartosc_brutto"]], ";");
+        if (file_put_contents($file_path, $csv_data)) {
+            echo "Plik CSV zapisany pomyślnie!";
+        } else {
+            echo "❌ Błąd zapisu pliku!";
+        }
+    } else {
+        echo "❌ Brak danych do zapisania!";
+    }
+} else {
+    echo "❌ Żądanie nie jest typu POST!";
 }
-
-fclose($csv_file);
-echo "Plik CSV zapisany!";
-
-
-
 ?>

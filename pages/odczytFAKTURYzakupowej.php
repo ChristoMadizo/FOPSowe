@@ -113,43 +113,44 @@ foreach ($data["zamowienia"] as $zamowienie) {
 
 
 <script>
-function zmienWszystkie() {
-    let nowaWartosc = document.getElementById("nowa_wartosc").value; // Pobiera wartość z pola tekstowego
-    if (nowaWartosc.trim() === "") {
-        alert("Wpisz wartość przed zmianą!");
-        return;
+    function zmienWszystkie() {
+        let nowaWartosc = document.getElementById("nowa_wartosc").value; // Pobiera wartość z pola tekstowego
+        if (nowaWartosc.trim() === "") {
+            alert("Wpisz wartość przed zmianą!");
+            return;
+        }
+
+        document.querySelectorAll("input[name^='nazwa_faktury_']").forEach(input => {
+            input.value = nowaWartosc;
+        });
     }
 
-    document.querySelectorAll("input[name^='nazwa_faktury_']").forEach(input => {
-        input.value = nowaWartosc;
-    });
-}
+    function eksportDoCSV() {   //ta funkcja przekazuje dane do PHP - pobiera to co widzi i uruchamia skrypt PHP, który zapisuje dane do CSV
+        let rows = document.querySelectorAll("table tbody tr");
+        let csvContent = [];
 
-function eksportDoCSV() {
-    let rows = document.querySelectorAll("table tbody tr");
-    let csvContent = [];
-
-    rows.forEach(row => {
-        let rowData = [];
-        row.querySelectorAll("td").forEach((cell, index) => {
-            let input = cell.querySelector("input");
-            rowData.push(input ? input.value.trim() : cell.innerText.trim());
+        rows.forEach(row => {
+            let rowData = [];
+            row.querySelectorAll("td").forEach((cell, index) => {
+                let input = cell.querySelector("input");
+                rowData.push(input ? input.value.trim() : cell.innerText.trim());
+            });
+            csvContent.push(rowData.join(";")); // Separator CSV
         });
-        csvContent.push(rowData.join(";")); // Separator CSV
-    });
 
-    let formData = new FormData();
-    formData.append("csv_data", csvContent.join("\n"));
+        let formData = new FormData();
+        formData.append("csv_data", csvContent.join("\n"));
 
-    fetch("/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/zapiszDaneCSV.php", { 
-        method: "POST",
-        body: formData 
-    })
+        fetch("/pages/ODCZYtFakturyZAKUPOWEJ/zapiszDaneCSV.php", { 
+            method: "POST",
+            body: formData 
+        })
 
-    .then(response => response.text())
-    .then(data => alert("Dane zapisane do CSV!"))
-    .catch(error => console.error("Błąd:", error));
-}
+
+        .then(response => response.text())
+        .then(data => alert("Dane zapisane do CSV!"))
+        .catch(error => console.error("Błąd:", error));
+    }
 
 </script>
 

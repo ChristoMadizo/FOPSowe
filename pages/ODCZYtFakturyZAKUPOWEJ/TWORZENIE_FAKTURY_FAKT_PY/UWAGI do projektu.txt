@@ -1,0 +1,3 @@
+Kolejność wykonywania:
+
+1. CreateFAKTInvoice.py - tworzy w FAKT fakturę
