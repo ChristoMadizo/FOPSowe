@@ -124,8 +124,8 @@ ul li a.active {
 p {
     font-size: 20px; /* Ustala rozmiar czcionki */
     color: #333; /* Ustala kolor tekstu */
-    margin-top: 40px; /* Dodaje margines górny, aby oddzielić od nagłówka */
-    padding: 10px; /* Dodaje przestrzeń wewnątrz paragrafu */
+    margin-top: 10px; /* Dodaje margines górny, aby oddzielić od nagłówka */
+    padding: 0px; /* Dodaje przestrzeń wewnątrz paragrafu */
 }
 
 

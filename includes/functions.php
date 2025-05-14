@@ -34,7 +34,7 @@ function executeOnVM($command) {
 
 <?php
 function SendSMSNokia($PhoneNr,$SMScontent) {
-    $result = executeOnVM('nokia send ' .$PhoneNr . ' ' .  $SMScontent);
+    $result = executeOnVM('/usr/local/bin/nokia send ' .$PhoneNr . ' ' .  $SMScontent);
     // Zwracanie wyniku
     //$output = [];
     //$return_var = 0;
@@ -51,7 +51,7 @@ function SendSMSNokia($PhoneNr,$SMScontent) {
 <?php
 function ReadSMSNokia($messages_count) {
     // Wykonanie polecenia na VM i uzyskanie wyniku
-    $result = executeOnVM('nokia read ' . $messages_count);
+    $result = executeOnVM('/usr/local/bin/nokia read ' . $messages_count);
 
     // Sprawdzanie, czy wynik nie jest pusty
     if (!empty($result)) {
@@ -306,13 +306,20 @@ function fetch_data($connection, $sql) {
             die("Błąd zapytania (MySQL): " . $connection->error);
         }
 
-        $data = $result->fetch_all(MYSQLI_ASSOC);
+        // Tylko jeśli to SELECT
+        if (stripos(trim($sql), 'SELECT') === 0) {
+            $data = $result->fetch_all(MYSQLI_ASSOC);
+        } else {
+            $data = []; // brak danych do pobrania
+        }
+
         return [$result, $data];
 
     } else {
         die("Nieprawidłowy typ połączenia");
     }
 }
+
 
 ?>
 
@@ -561,26 +568,23 @@ function executeSQL($connection, $filePath, $param = null) {
 }
 
 
-function db_connect_firebird_FAKT_LIVE() {
-    // Parametry połączenia
-    $host = 'localhost'; // Adres IP serwera Windows, gdzie działa Firebird
-    $port = '3050'; // Port Firebird
-    $database_path = '/opt/firebird/FAKT_LIVE_COPY/0002BAZA.FDB'; // Ścieżka lokalna na Linux (zmapowana)
-    $username = 'KRZYSIEK'; // Użytkownik bazy danych Firebird
-    $password = 'Bielawa55'; // Hasło bazy danych Firebird
+function db_connect_firebird_FAKT_LIVE() {    //łączy do KOPII bazy FAKT_LIVE
+    $host = 'localhost';
+    $port = '3050';
+    $database_path = '/opt/firebird/FAKT_LIVE_COPY/0002BAZA.FDB';
+    $username = 'KRZYSIEK';
+    $password = 'Bielawa55';
 
-    // Tworzenie stringa połączenia
     $connection_string = "{$host}/{$port}:{$database_path}";
 
-    // Próba połączenia z serwerem Firebird
-    $connection = ibase_connect($connection_string, $username, $password);
+    // Na sztywno ustawione kodowanie na UTF8
+    $connection = ibase_connect($connection_string, $username, $password, 'UTF8');
 
     if (!$connection) {
-        // Obsługa błędu połączenia
         die("Nie udało się połączyć z bazą danych Firebird: " . ibase_errmsg());
     }
 
-    // Wypisanie komunikatu o sukcesie
+    // echo możesz usunąć w wersji produkcyjnej
     echo "Połączono z bazą danych Firebird!";
     return $connection;
 }
@@ -860,7 +864,7 @@ function getAllNamesFromPdfDir($dir_path, $szyfrowac = false) {
                 $result[] = [
                     'nazwisko_imie' => $nazwisko_imie,
                     'sciezka_pdf' => $pdf_path,
-                    'haslo_pdf' => $szyfrowac ? $password : null // Hasło tylko, gdy szyfrowanie jest aktywne
+                    'haslo_pdf' => $password  //nawet jesli nie szyfrujemy, to hasło jest generowane
                 ];
             }
         } catch (Exception $e) {
@@ -870,6 +874,38 @@ function getAllNamesFromPdfDir($dir_path, $szyfrowac = false) {
 
     return $result;
 }
+
+
+function setProtection($sciezka_pdf_local, $password) {
+    $fpdi = new FpdiProtection();
+    
+    // Sprawdzenie, czy plik istnieje
+    if (!file_exists($sciezka_pdf_local)) {
+        throw new Exception("Plik PDF nie istnieje: " . $sciezka_pdf_local);
+    }
+
+    // Ustawienie pliku źródłowego
+    $pageCount = $fpdi->setSourceFile($sciezka_pdf_local);
+
+    // Kopiowanie stron z oryginalnego PDF-a
+    for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+        $templateId = $fpdi->importPage($pageNo);
+        $size = $fpdi->getTemplateSize($templateId);
+        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+
+        $fpdi->AddPage($orientation, [$size['width'], $size['height']]);
+        $fpdi->useTemplate($templateId);
+    }
+
+    // Ustawienie hasła i zapisanie pliku
+    $fpdi->SetProtection([], $password);
+    $fpdi->Output('F', $sciezka_pdf_local); // Nadpisanie pliku
+}
+
+
+
+
+
 
 
 function insertIntoTable($conn, $table, $data) {

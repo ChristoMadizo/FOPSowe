@@ -15,11 +15,17 @@ $workers_info = fetch_data($connection, $sql)[1]; // Pobieranie danych o pracown
 if (isset($_POST['action']) && $_POST['action'] === 'wyslij_sms') {  //wysyła SMS z prośbą o adres e-mail
     $nr_telefonu = $_POST['phone_number'];   //573299922
     $adres_email = $_POST['e_mail_address'];
-    $result = SendSMSNokia($nr_telefonu, 'Proszę o podanie adresu e-mail do wysyłki pasków wynagrodzeń, poprzez odpowiedź na tę wiadomość. Dziękuję, Dział Kadr FOPS.');
+    $message_content = $_POST['text_message_content'];
+    $result = SendSMSNokia($nr_telefonu,$message_content);
+
+    $sql="INSERT INTO `ee01_SMSmessages_history` (worker_id, phone_number_to,phone_number_from, message_content,remarks,date_time) 
+    VALUES ('$worker_id', '$nr_telefonu', '573299922', '$message_content', '',NOW())";
+
+    fetch_data($connection, $sql); //wykonuje INSERT do bazy
+
 };
 
-//Prosze o podanie adresu e-mail, na ktory beda wysylane paski wynagrodzen, poprzez odpowiedz na te wiadomosc. Dziękuje, dzial Kadr FOPS. - testy ok, długość 136 znaków
-//Czy to za dlugi tekst? Czy to za dlugi tekst? Czy to za dlugi tekst? Czy to za dlugi tekst? Czy to za dlugi tekst? Czy to za dlugi tekst? - testy ok, długość 138 znaków
+
 
 if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_odpowiedzi') {  //odświeża potwierdzenie SMS i robi UPDATE bazy, jeśli podano maila
     $messages = ReadSMSNokia(100);
@@ -77,45 +83,53 @@ if (isset($_POST['action']) && $_POST['action'] === 'sprawdz_odpowiedzi') {  //o
 <div class="content">
 
     <form method="post">
-        <button type="submit" name="action" value="sprawdz_odpowiedzi">Sprawdź odpowiedzi.</button>
+        <button type="submit" name="action" value="sprawdz_odpowiedzi">Sprawdź odpowiedzi</button>
     </form>               
-
 
     <table border="1">
         <tr>
             <!-- Nagłówki tabeli -->
-            <?php foreach (array_keys($workers_info[0]) as $column_name): ?>
-                <th><?php echo htmlspecialchars($column_name, ENT_QUOTES, 'UTF-8'); ?></th>
-            <?php endforeach; ?>
+            <th>Imię</th>
+            <th>Nazwisko</th>
+            <th>Numer telefonu</th>
+            <th>Adres e-mail</th>
             <th>Akcja</th>
+            <th>Treść do wysłania</th>
         </tr>
 
         <!-- Wiersze danych -->
         <?php foreach ($workers_info as $row): ?>
             <tr>
-                <!-- Kolumny danych -->
-                <?php foreach ($row as $key => $value): ?>
-                    <td><?php echo htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
-                <?php endforeach; ?>
+            <!-- Dane pracownika -->
+            <td><?php echo htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row['surname'], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row['phone_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row['e_mail_address'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
 
-                <!-- Kolumna z przyciskami akcji -->
-                <td>
-                    <form method="post">
-                        <!-- Przekazanie wszystkich danych wiersza -->
+            <!-- Akcja -->
+            <td>
+                <form method="post">
+                    <!-- Ukryte pola z danymi pracownika -->
+                    <input type="hidden" name="name" value="<?php echo htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="surname" value="<?php echo htmlspecialchars($row['surname'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="phone_number" value="<?php echo htmlspecialchars($row['phone_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="e_mail_address" value="<?php echo htmlspecialchars($row['e_mail_address'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="text_message_content" value="Proszę o podanie adresu e-mail do wysyłki pasków wynagrodzeń, poprzez odpowiedź na tę wiadomość. Dziękuję, Dział Kadr FOPS.">
+                    
+                    <!-- Przycisk wysyłki SMS -->
+                    <button type="submit" name="action" value="wyslij_sms" style="all: unset; color: blue; text-decoration: underline; cursor: pointer; display: block; text-align: center;">Wyślij SMS</button>
+                    <!-- Pole do wpisania treści SMS-a (teraz edytowalne) -->
+                     <td>
+                        <textarea name="text_message_content" style="width: 500px; box-sizing: border-box; word-wrap: break-word; white-space: pre-wrap;" rows="3">Proszę o podanie adresu e-mail do wysyłki pasków wynagrodzeń, poprzez odpowiedź na tę wiadomość. Dziękuję, Dział Kadr FOPS.</textarea>
+                    </td>
+                </form>
+            </td>
 
-                        <input type="hidden" name="name" value="<?php echo htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="surname" value="<?php echo htmlspecialchars($row['surname'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="phone_number" value="<?php echo htmlspecialchars($row['phone_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="e_mail_address" value="<?php echo htmlspecialchars($row['e_mail_address'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">  <!-- uzupełnienie scieżki do pliku pdf -->
-                        
-                        <!-- Przyciski akcji -->
-                        <button type="submit" name="action" value="wyslij_sms" style="all: unset; color: blue; text-decoration: underline; cursor: pointer; display: block; text-align: center;">Wyślij SMS</button>
+      
 
-                    </form>
-                </td>
-            </tr>
+        </tr>
         <?php endforeach; ?>
     </table>
 
-
 </div>
+

@@ -9,7 +9,7 @@
         // Ścieżki do Node.js i skryptu login.js
        // $nodePath = '"C:\\Program Files\\nodejs\\node.exe"';
         //$scriptPath = '"C:\\xampp\\htdocs\\km_www\\scripts\\login.js"';
-        $scriptPath = '/home/kmadzia/www/scripts/login.js'; // Ścieżka do skryptu login.js
+        $scriptPath = '/home/kmadzia/www/scripts/wentylacja_login_interact.js'; // Ścieżka do skryptu login.js
 
         // Budowanie polecenia
         $command = $scriptPath;    // $nodePath . ' ' . $scriptPath;

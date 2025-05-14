@@ -5,6 +5,9 @@ require '/home/kmadzia/www/includes/functions.php';
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+date_default_timezone_set('Europe/Warsaw'); // Ustawienie strefy czasowej na Warszawę
+
+
 // Funkcja wyświetlająca formularz WSKAŻ_PLIK_PDF
 function wyswietl_formularz_pobierania_plikuPDF() {
     echo '<form method="POST" action="" enctype="multipart/form-data">
@@ -63,15 +66,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Sprawdzanie czy lista pracowników jest w sesji - jeśli to stara sesja, to działamy na starych plikach i danych, 
 // jeśli sesja jest pusta, to tniemy pdf i tworzymy nową sesję
 
+$set_protection = false;   //nie szyfruję na etapie dzielenia pliku, żeby móc podglądać pdf w iframe
+
 if (!isset($_SESSION['lista_pracownikow'])) {         
     $result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
-    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);  //pobiera listę pracowników z pdf
+    $_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = $set_protection);  //pobiera listę pracowników z pdf.
+    //nie szyfruję tutaj, żeby móc podglądać pdf w iframe
 }  
 
 //$result = splitPdf($path_origin, $path_destination); // Dzielenie PDF na pojedyncze pliki
 //$_SESSION['lista_pracownikow'] = getAllNamesFromPdfDir($path_destination, $szyfrowac = true);
 
 $lista_pracownikow = $_SESSION['lista_pracownikow'];   //czyli w tej zmiennej mamy listę pracowników pobraną z plików pdf.
+
+$base_PDF_url = "http://192.168.101.203/pages/PASKI_WYPLATY/PDFyDoOdczytu/";  //żeby wyświetlić pdf w iframe
+
 
 $table = [];   //buduje tabelę z listy pracowników, którą pobrał z plików pdf
 foreach ($lista_pracownikow as $index => $pracownik) {
@@ -81,7 +90,8 @@ foreach ($lista_pracownikow as $index => $pracownik) {
         'nazwisko_imie' => $pracownik['nazwisko_imie'],
         'nr_telefonu' => '',
         'adres_email' => '',
-    //    'sciezka_pdf' => $pracownik['sciezka_pdf'],
+        //'sciezka_pdf' => $pracownik['sciezka_pdf'],
+        'sciezka_pdf' => $base_PDF_url . basename($pracownik['sciezka_pdf']), //konwertuję, bo bez tego nie umiał wyświetlić pdf
         'Last_SMS_Email_date'=>'',
         'Last_SMS_confirmation_date'=>''
     ];
@@ -141,13 +151,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && ($_POST[
         $tytul = "To jest tytul";
         $tresc = "Witamy z formularza";
         $sciezka_pdf = $_POST['sciezka_pdf'];
-        $result = sendEmail($adres_email, $tytul, $tresc, $sciezka_pdf);
+
+        $password=$lista_pracownikow[$Lp - 1]['haslo_pdf'];
+        $sciezka_pdf_local = str_replace("http://192.168.101.203/pages/", "/home/kmadzia/www/pages/", $sciezka_pdf); // Zamiana na lokalną ścieżkę
+
+
+        if (!$set_protection){   //jeśli zmienna $set_protection to znaczy ze przy podziale pliku nie był on zaszyfrowany, więc szyfrujemy go teraz
+            setProtection($sciezka_pdf_local, $password); //szyfruje plik pdf
+        }
+
+        $result = sendEmail($adres_email, $tytul, $tresc, $sciezka_pdf_local);
 
         $sql='SELECT id FROM km_base.aa01_workers WHERE phone_number = ' . $nr_telefonu . ''; 
         $worker_id=fetch_data($connection, $sql); // Pobranie id pracownika na podstawie numeru telefonu
         $event_datetime=new DateTime();
-        $password=$lista_pracownikow[$Lp - 1]['haslo_pdf'];
-        $tekst_wiadomosci = $lista_pracownikow[$Lp - 1]['haslo_pdf'];
+       
+        $tekst_wiadomosci = $password;
 
         $result = SendSMSNokia($nr_telefonu, $tekst_wiadomosci); //wysyła SMS do pracownika
         $sendCopyToNokia = SendSMSNokia(789757533,$nr_telefonu); //kopia wysyłana na Nokię - w treści numer telefonu pracownika na który wysłano SMS
@@ -233,55 +252,100 @@ if ($row['nazwisko_imie'] === $workers_info[0]['nazwisko_imie']) {
 ?>
 <!--*********************************WYŚWIETLANIE STRONY*************************************************************  -->
 
-<div class="content">
-    <table border="1"">
-        <tr>
-            <!-- Nagłówki tabeli -->
-            <?php foreach (array_keys($table[0]) as $column_name): ?>
-                <th>
-                    <?php if ($column_name === 'Last_SMS_confirmation_date'): ?>
-                        <form method="post">
-                            <button type="submit" name="action" value="refresh_SMS" style="width: 80%; background-color:rgb(131, 194, 102);">
-                                Odśwież SMS
-                            </button>
-                        </form>
-                    <?php else: ?>
-                        <?php echo htmlspecialchars($column_name, ENT_QUOTES, 'UTF-8'); ?>
-                    <?php endif; ?>
-                </th>
-            <?php endforeach; ?>
-            <th style="min-width: 130px;">Akcja</th>
-        </tr>
 
-        <!-- Wiersze danych -->
-        <?php foreach ($table as $row): ?>
-            <tr style="text-align: center; max-width: 200px;">
-                <!-- Kolumny danych -->
-                <?php foreach ($row as $key => $value): ?>       
-                    <td><?php echo htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8'); ?></td>                   
-                <?php endforeach; ?>
-
-                <!-- Kolumna z przyciskami akcji -->
-                <td>
-                    <form method="post">
-                        <input type="hidden" name="Lp" value="<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="nazwisko_imie" value="<?php echo htmlspecialchars($row['nazwisko_imie'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="nr_telefonu" value="<?php echo htmlspecialchars($row['nr_telefonu'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email'] ?? 'brak adresu', ENT_QUOTES, 'UTF-8'); ?>">
-                        <input type="hidden" name="sciezka_pdf" value="<?php echo htmlspecialchars($row['sciezka_pdf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">  
-
-                        <!-- Przyciski akcji -->
-                        <button type="submit" name="action" value="email_and_SMS">E-mail + SMS</button>
-                    </form>
-                </td>
+<body>
+    <div class="content" display: flex; gap: 20px;>
+        <table border="1">
+            <tr>
+                <th>Lp</th>
+                <th>Nazwisko i imię</th>
+                <th>Nr telefonu</th>
+                <th>Adres e-mail</th>
+                <th>Last SMS Email Date</th>
+                <th>Last SMS Confirmation Date</th>   
+                <th>Time from <br>last email / SMS<br>(minutes)</th>               
+                <th style="width: 120px;">Akcja</th>
+                <th style="width: 120px;">Podgląd PDF</th>
             </tr>
-        <?php endforeach; ?>
-    </table>
 
-    <form method="post">
-        <button type="submit" name="action" value="reset_sesji" style="background-color: lightcoral;">Resetuj</button>
-    </form>
-</div>
+            <!-- Wiersze danych -->
+            <?php foreach ($table as $row): ?>
+                <tr id="row-<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <td><?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($row['nazwisko_imie'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($row['nr_telefonu'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($row['adres_email'] ?? 'brak adresu', ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($row['Last_SMS_Email_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($row['Last_SMS_confirmation_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td> 
+                    <?php //oblicza ile minut temu było ostatni mail
+                        $lastEmailDate = new DateTime($row['Last_SMS_Email_date']);
+                        $lastSMSlDate = new DateTime($row['Last_SMS_confirmation_date']);
+                        $now = new DateTime();
+                        $interval_email = $now->diff($lastEmailDate);
+                        $interval_SMSconf = $now->diff($lastSMSlDate);
+                        $totalMinutesfromEmail = ($interval_email->days * 24 * 60) + ($interval_email->h * 60) + $interval_email->i;
+                        $totalMinutesfromSMSConf = ($interval_SMSconf->days * 24 * 60) + ($interval_SMSconf->h * 60) + $interval_SMSconf->i;
+                        echo '<div style="text-align: center;">' . $totalMinutesfromEmail . ' / ' . $totalMinutesfromSMSConf .'</div>'; // Całkowita liczba minut wyśrodkowana
+                    ?>
 
+                    </td>
+                    <td>
+                        <form method="post">
+                            <input type="hidden" name="Lp" value="<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="nazwisko_imie" value="<?php echo htmlspecialchars($row['nazwisko_imie'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="nr_telefonu" value="<?php echo htmlspecialchars($row['nr_telefonu'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="adres_email" value="<?php echo htmlspecialchars($row['adres_email'] ?? 'brak adresu', ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="sciezka_pdf" value="<?php echo htmlspecialchars($row['sciezka_pdf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                            <button type="submit" name="action" value="email_and_SMS">E-mail + SMS</button>
+                        </form>
+                  </td>
+                    <!-- Ukryty input przechowujący ścieżkę PDF -->
+                    <td>
+                        <input type="hidden" id="pdf-<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>" 
+                            value="<?php echo htmlspecialchars($row['sciezka_pdf'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <button style="top: 2px;" type="button" onclick="pokazPDF('<?php echo htmlspecialchars($row['Lp'], ENT_QUOTES, 'UTF-8'); ?>')">Podgląd PDF</button>
+                    </td>
+                </tr>
+
+            <?php endforeach; ?>
+        </table>
+
+        <form method="post">
+                        <button type="submit" name="action" value="refresh_SMS" style= background-color:rgb(131, 194, 102);">Odśwież SMS</button>
+        </form>
+
+        <form method="post">
+            <button type="submit" name="action" value="reset_sesji" style="background-color: lightcoral;">Resetuj</button>
+        </form>
+
+
+        <div style="width: 30%;">   <!--kontener na PDF -->
+            <iframe id="pdf-viewer" style="width: 100%; height: 500px; border: 1px solid #ccc;"></iframe>
+        </div>
+
+    </div>
+
+    </div>
+
+    <script>
+        function pokazPDF(Lp) {
+            // Pobieranie wartości z ukrytego pola input
+            const sciezkaPDF = document.getElementById(`pdf-${Lp}`).value;
+            const pdfViewer = document.getElementById('pdf-viewer');
+
+            if (sciezkaPDF && pdfViewer) {
+                console.log("Ładowanie PDF:", sciezkaPDF);  // Debugowanie w konsoli
+                pdfViewer.src = sciezkaPDF + "#zoom=200";
+            } else {
+                console.error("Błąd: Nie znaleziono ścieżki PDF dla Lp:", Lp);
+                alert("Nie można wyświetlić pliku PDF. Sprawdź poprawność danych.");
+            }
+        }
+    </script>
+
+
+
+</body>
 
 
