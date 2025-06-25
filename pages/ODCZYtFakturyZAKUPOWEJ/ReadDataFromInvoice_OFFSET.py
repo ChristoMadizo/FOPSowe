@@ -21,16 +21,29 @@ def extract_data_from_pdf(pdf_path):
         text_lines = [page.extract_text().split("\n") for page in pdf.pages if page.extract_text()]
         text_lines = [line for page in text_lines for line in page]  # Spłaszczamy listę
 
-    #print("\n===== Sczytany tekst z PDF =====\n")
-    #print("\n".join(text_lines))  # Wyświetlamy cały tekst
-
     data = {}
 
     # Pobieranie numeru NIP
     for line in text_lines:
         if "NIP:" in line:
             data["NIP"] = re.search(r"NIP:\s*([\d-]+)", line).group(1)
-            break
+            data["NIP"] = data["NIP"].replace("-", "")
+            break  
+
+    for line in text_lines:
+        if "Faktura VAT" in line:
+            match = re.search(r"Faktura VAT\s*(\d+/\d+)", line)
+            if match:
+                data["numer_faktury"] = match.group(1)
+                break
+
+    # Pobieranie terminu płatności
+    for line in text_lines:
+        if line.startswith("W terminie"):
+            match = re.search(r"(\d{2}\.\d{2}\.\d{4})", line)  # Szuka daty w formacie DD.MM.YYYY
+            if match:
+                data["termin_platnosci"] = match.group(1)
+            
 
     # Pobieranie daty wystawienia
     for i, line in enumerate(text_lines):
@@ -61,10 +74,19 @@ def extract_data_from_pdf(pdf_path):
                 opis = " ".join(parts[1:-7])  # Opis to wszystko między Lp a liczbami
 
                 # Pobranie kolejnej linijki jako dodatkowy opis
-                dodatkowy_opis = text_lines[i + 1] if i + 1 < len(text_lines) else ""
-                opis = f"{opis}, {dodatkowy_opis.strip()}"
+                dodatkowy_opis = text_lines[i + 1].strip() if i + 1 < len(text_lines) else ""
 
-                ilosc = parts[-7]
+                # Sprawdzamy, czy dodatkowy opis nie jest "Ciąg dalszy na następnej stronie"
+                if dodatkowy_opis.startswith("Ciąg dalszy na następnej stronie"):
+                    # Znalezienie następnej pozycji w tekście
+                    for j in range(i + 2, len(text_lines)):
+                        if is_integer(text_lines[j].split()[0]):  # Jeśli nowa linia zaczyna się od liczby (Lp)
+                            dodatkowy_opis = text_lines[j - 1].strip()  # Pobieramy opis z wiersza nad nową pozycją
+                            break
+
+                opis = f"{opis} {dodatkowy_opis}"
+
+                ilosc = parse_number(parts[-7])  # Ilość to przedostatnia wartość
                 jednostka_miary = parts[-6]
                 cena = parse_number(parts[-5])
                 stawka_vat = parse_number(parts[-4])
@@ -96,13 +118,8 @@ def extract_data_from_pdf(pdf_path):
                 data["razem_brutto"] = parse_number(parts[3])
             break
 
-    #print("\n===== Wyodrębnione dane =====\n")
-    #import pprint
-    #pprint.pprint(data)
-
     json_data = json.dumps(data, ensure_ascii=False, indent=4)  # `ensure_ascii=False` obsługuje polskie znaki
 
-    #print("\n===== Dane w formacie JSON =====\n")
     print(json_data)  # Wyświetlenie JSON
 
     return json_data

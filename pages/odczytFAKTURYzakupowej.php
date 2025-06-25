@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['pdf_file']['tmp_nam
 }*/
 
 $python_path = '/home/kmadzia/myenv/bin/python';
-$script_path = '/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/ReadDataFromInvoice_OFFSET.py';
+$script_path = '/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/ReadDataFromInvoice_OFFSET.py';  //tutaj wywołuję Pythona dedykowanego dla danej firmy
 $command = "$python_path $script_path";
 
 // Pobranie danych JSON z Pythona
@@ -59,7 +59,13 @@ foreach ($data["zamowienia"] as $zamowienie) {
 <p><strong></strong></p>  
 <input type="text" id="nowa_wartosc" placeholder="Wpisz wartość" style="margin-top: 30px;margin-bottom: 30px; height: 40px;">
 <button onclick="zmienWszystkie()">Zmień opis FAKT</button>
-<button onclick="eksportDoCSV()">Eksportuj do CSV</button>
+<button onclick="eksportDoCSV()">Zapisz dane</button>
+<button style="background-color: grey; color: white;" onclick="downloadEXEfile('http://192.168.101.203/pages/ODCZYtFakturyZAKUPOWEJ/OFFSET/CreateFAKTInvoice.exe',
+'C:\\Automat_faktury_fakt')">Pobierz plik exe</button>
+
+
+
+
 
 <table border="1" cellspacing="0" cellpadding="5">
     <thead>
@@ -91,6 +97,11 @@ foreach ($data["zamowienia"] as $zamowienie) {
                 <td><?php echo number_format($zamowienie["wartosc_netto"], 2, '.', ''); ?></td>
                 <td><?php echo number_format($zamowienie["vat"], 2, '.', ''); ?></td>
                 <td><?php echo number_format($zamowienie["wartosc_brutto"], 2, '.', ''); ?></td>
+                <td style="display:none;"><?php echo htmlspecialchars($data["NIP"]); ?></td>
+                <td style="display:none;"><?php echo htmlspecialchars($data["numer_faktury"]); ?></td>
+                <td style="display:none;"><?php echo htmlspecialchars($data["data_wystawienia"]); ?></td>
+                <td style="display:none;"><?php echo htmlspecialchars($data["data_dostawy"]); ?></td>
+                <td style="display:none;"><?php echo htmlspecialchars($data["termin_platnosci"]); ?></td>
             </tr>
         <?php endforeach; ?>
         <!-- Wiersz podsumowania -->
@@ -109,9 +120,6 @@ foreach ($data["zamowienia"] as $zamowienie) {
 <p><strong>Data dostawy:</strong> <?php echo htmlspecialchars($data["data_dostawy"]); ?></p>
 
 
-
-
-
 <script>
     function zmienWszystkie() {
         let nowaWartosc = document.getElementById("nowa_wartosc").value; // Pobiera wartość z pola tekstowego
@@ -125,32 +133,51 @@ foreach ($data["zamowienia"] as $zamowienie) {
         });
     }
 
-    function eksportDoCSV() {   //ta funkcja przekazuje dane do PHP - pobiera to co widzi i uruchamia skrypt PHP, który zapisuje dane do CSV
-        let rows = document.querySelectorAll("table tbody tr");
-        let csvContent = [];
+    
+  function eksportDoCSV() {  
+    let rows = document.querySelectorAll("table tbody tr");
+    let csvContent = [];
 
-        rows.forEach(row => {
-            let rowData = [];
-            row.querySelectorAll("td").forEach((cell, index) => {
-                let input = cell.querySelector("input");
-                rowData.push(input ? input.value.trim() : cell.innerText.trim());
-            });
-            csvContent.push(rowData.join(";")); // Separator CSV
+    // Dodaj nagłówki 
+    let headers = ["Lp", "Opis", "Opis FAKT", "Ilość", "Jednostka miary", "Cena", "Stawka VAT", "Wartość netto", "VAT", "Wartość brutto",
+    "NIP","Numer faktury","Data wystawienia","Data dostawy","Termin płatności"];
+    csvContent.push(headers.join(";"));
+
+    rows.forEach(row => {
+        let rowData = [];
+        row.querySelectorAll("td").forEach((cell, index) => {
+            let input = cell.querySelector("input");
+            rowData.push(input ? input.value.trim() : cell.innerText.trim());
         });
+        csvContent.push(rowData.join(";")); // Separator CSV
+    });
 
-        let formData = new FormData();
-        formData.append("csv_data", csvContent.join("\n"));
+    let formData = new FormData();
+    formData.append("csv_data", csvContent.join("\n"));
 
-        fetch("/pages/ODCZYtFakturyZAKUPOWEJ/zapiszDaneCSV.php", { 
-            method: "POST",
-            body: formData 
-        })
+    fetch("/pages/ODCZYtFakturyZAKUPOWEJ/zapiszDaneCSV.php", { 
+        method: "POST",
+        body: formData 
+    })
+    .then(response => response.text())
+    .then(data => alert("Dane zapisane do CSV!"))
+    .catch(error => console.error("Błąd:", error));
+    
+    //uruchamia dodawanie faktury do FAKT
+    //window.location.href = "http://192.168.101.203/home/kmadzia/www/pages/ODCZYtFakturyZAKUPOWEJ/OFFSET/run_CreateFAKTInvoice_OFFSET_exe.ps1";
 
 
-        .then(response => response.text())
-        .then(data => alert("Dane zapisane do CSV!"))
-        .catch(error => console.error("Błąd:", error));
+}
+
+
+//'http://192.168.101.203/pages/ODCZYtFakturyZAKUPOWEJ/OFFSET/CreateFAKTInvoice_OFFSET.exe',
+//'C:\\Automat_faktury_fakt\\OFFSET\\CreateFAKTInvoice_OFFSET.exe'
+
+    function downloadEXEfile(source,destination) {
+        window.location.href = source;
     }
+
+
 
 </script>
 

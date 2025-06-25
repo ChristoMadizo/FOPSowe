@@ -7,9 +7,20 @@ error_reporting(E_ALL);
 
 // Połączenie z bazą danych
 $connection = db_connect_mysqli_KM_VM();
+// Pobranie wartości z formularza - jeśli nie ma, ustawiamy domyślne 
+$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d H:i:s', strtotime('-48 hours'));
+$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d H:i:s');
+
+
+// Sprawdzenie, czy wartości są dostępne
+$whereCondition = "WHERE event_name='temperature_check'";
+if ($date_from && $date_to) {
+    $whereCondition .= " AND date_time BETWEEN '$date_from' AND '$date_to'";
+}
+
 $sql = "SELECT sensor_id, DATE_FORMAT(date_time, '%Y-%m-%d %H:%i:%s') AS date_time, temperature 
         FROM km_base.cc01_wentylacja_events 
-        WHERE event_name='temperature_check' and  date_time > NOW() - INTERVAL 17 HOUR
+        $whereCondition
         ORDER BY date_time ASC";
 
 $dane = fetch_data($connection, $sql);
@@ -40,9 +51,27 @@ foreach ($dane[1] as $row) {
     <title>Wykres temperatury</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body style="margin-top: 80px;">
 
-var_dump($sensorData); // Debugging - wyświetlenie danych
+<form method="get" action="" style="margin-bottom: 20px;">
+    <input type="hidden" name="page" value="wykres_temperatury">   <!--bez tego adres URL nie będzie poprawny-->
+
+    <label for="date_from">Data od:</label>
+    <input type="datetime-local" id="date_from" name="date_from" value="<?php 
+        echo isset($_GET['date_from']) ? htmlspecialchars($_GET['date_from']) : date('Y-m-d\TH:i', strtotime('-48 hours')); 
+    ?>">
+
+    <label for="date_to">Data do:</label>
+    <input type="datetime-local" id="date_to" name="date_to" value="<?php 
+        echo isset($_GET['date_to']) ? htmlspecialchars($_GET['date_to']) : date('Y-m-d\TH:i'); 
+    ?>">
+
+    <button type="submit">Generuj wykres</button>
+</form>
+
+
+
+
 <canvas id="lineChart"></canvas>
 
 <script>

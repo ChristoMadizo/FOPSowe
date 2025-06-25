@@ -5,7 +5,7 @@ require '/home/kmadzia/www/includes/functions.php';
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-$connection=db_connect_firebird_FAKT_LIVE();
+$connection=db_connect_firebird_FAKT_COPY();   //łączy się do kopii bazy FAKT_LIVE
 
 $sql='SELECT * FROM ZZ_TMP_NALEZNOSCI';
 

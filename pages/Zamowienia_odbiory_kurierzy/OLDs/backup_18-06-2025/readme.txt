@@ -1,0 +1,1 @@
+Ostateczna wersja uzywa skryptu pythona do odczytania zawartoœci PDF.

@@ -34,11 +34,14 @@ def wait(duration=TIMEOUT_DURATION):
 
 # Funkcja DECYZYJNA
 def check_centrala_state(TEMP_ZADANA, temp_wewnetrzna_czarny_czujnik, temp_pow_zewn, last_switch_modification_date, last_switch_on_date, dni_wolne, wentylacja_state, frame2, switch_element_wyd1):
+
     TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     current_time = datetime.now()
     current_hour = current_time.hour
     current_date = current_time.strftime("%Y-%m-%d")
     current_weekday = current_time.strftime("%A")
+
+    current_date="2025-05-01"     #TYMCZASOWO, ŻEBY WYŁĄCZAŁO WENTYLACJĘ
 
     match True:
         case _ if current_date in dni_wolne:

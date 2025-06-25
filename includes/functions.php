@@ -1,10 +1,11 @@
-<?php 
+<?php
 require '/home/kmadzia/www/vendor/autoload.php'; // Jeśli używasz Composer
-echo "Plik functions.php został załadowany przez autoloader.<br>"; ?>
+//echo "Plik functions.php został załadowany przez autoloader.<br>"; ?>
 
 
 <?php
-function executeOnVM($command) {
+function executeOnVM($command)
+{
     // Parametry połączenia z VM
     $vm_ip = '192.168.101.203'; // IP maszyny wirtualnej
     $vm_user = 'kmadzia'; // Nazwa użytkownika
@@ -16,7 +17,7 @@ function executeOnVM($command) {
     // Budowanie polecenia
     //$cmd = "\"$plink_path\" -pw $vm_password $vm_user@$vm_ip \"$command\"";
 
-    $cmd=$command ;//nie trzeba już podawać plink_path ani się logować, bo php działa na VM
+    $cmd = $command;//nie trzeba już podawać plink_path ani się logować, bo php działa na VM
 
     // Wykonanie polecenia
     $output = [];
@@ -33,8 +34,9 @@ function executeOnVM($command) {
 ?>
 
 <?php
-function SendSMSNokia($PhoneNr,$SMScontent) {
-    $result = executeOnVM('/usr/local/bin/nokia send ' .$PhoneNr . ' ' .  $SMScontent);
+function SendSMSNokia($PhoneNr, $SMScontent)
+{
+    $result = executeOnVM('/usr/local/bin/nokia send ' . $PhoneNr . ' ' . $SMScontent);
     // Zwracanie wyniku
     //$output = [];
     //$return_var = 0;
@@ -49,7 +51,8 @@ function SendSMSNokia($PhoneNr,$SMScontent) {
 
 
 <?php
-function ReadSMSNokia($messages_count) {
+function ReadSMSNokia($messages_count)
+{
     // Wykonanie polecenia na VM i uzyskanie wyniku
     $result = executeOnVM('/usr/local/bin/nokia read ' . $messages_count);
 
@@ -57,10 +60,10 @@ function ReadSMSNokia($messages_count) {
     if (!empty($result)) {
         // Rozdzielamy wynik na linie
         $lines = explode("\n", $result);
-        
+
         // Inicjalizacja tablicy na wiadomości
         $messages = [];
-        
+
         // Tymczasowe przechowywanie wiadomości
         $current_message = [];
 
@@ -134,7 +137,8 @@ function ReadSMSNokia($messages_count) {
 
 
 <?php
-function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
+function findSMSByPhoneNumber($worker_id, $nr_telefonu, $trescSMS)
+{   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
     // Flaga, która wskazuje, czy znaleziono SMS z zawartością numeru telefonu
     $found = false;
 
@@ -143,11 +147,11 @@ function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza
         // Sprawdzamy, czy w treści wiadomości (message_content) znajduje się numer telefonu
         if (strpos($sms['message_content'], $nr_telefonu) !== false) {
             // Jeśli numer telefonu znajduje się w treści wiadomości
-           /* echo "Znaleziono SMS z numerem telefonu $nr_telefonu:\n";
-            echo "Numer telefonu: " . $sms['phone_number'] . "\n";
-            echo "Data: " . $sms['date_time'] . "\n";
-            echo "Treść: " . $sms['message_content'] . "\n";*/
-            
+            /* echo "Znaleziono SMS z numerem telefonu $nr_telefonu:\n";
+             echo "Numer telefonu: " . $sms['phone_number'] . "\n";
+             echo "Data: " . $sms['date_time'] . "\n";
+             echo "Treść: " . $sms['message_content'] . "\n";*/
+
             // Ustawiamy flagę na true i przerywamy pętlę
             $SMS_confirmation_data = [  //tworzy dane do dodania do bazy danych - event potwierdzenia smsa
                 'worker_id' => $worker_id,
@@ -169,12 +173,42 @@ function findSMSByPhoneNumber($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza
     }
 }
 
+?>
+
+<?php
+use setasign\FpdiProtection\FpdiProtection;
+function extractAndProtectPage(string $source_pdf, int $strona, string $sciezka_docelowa): string
+{
+    $fpdi = new FpdiProtection();
+    $fpdi->setSourceFile($source_pdf);
+
+    $fpdi->AddPage();
+    $templateId = $fpdi->importPage($strona);
+    $size = $fpdi->getTemplateSize($templateId);
+    $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+
+    $fpdi->AddPage($orientation, [$size['width'], $size['height']]);
+    $fpdi->useTemplate($templateId);
+
+    // Hasło — możesz też wygenerować na podstawie nazwiska
+    $haslo = 'PDF' . rand(1000, 9999);
+    $fpdi->SetProtection([], $haslo);
+
+    $fpdi->Output('F', $sciezka_docelowa);
+
+    return $haslo;
+}
 
 ?>
 
 
+
+
+
+?>
 <?php
-function findAnswerSMSwithEmailAddress($worker_id,$nr_telefonu, $trescSMS) {   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
+function findAnswerSMSwithEmailAddress($worker_id, $nr_telefonu, $trescSMS)
+{   //sprawdza czy na Nokię trafiła kopia SMS - potwierdzenie odebrania
     // Flaga, która wskazuje, czy znaleziono SMS z zawartością numeru telefonu
     $found = false;
 
@@ -183,7 +217,7 @@ function findAnswerSMSwithEmailAddress($worker_id,$nr_telefonu, $trescSMS) {   /
         // Sprawdzamy, czy w treści wiadomości (message_content) znajduje się numer telefonu
         if (strpos($sms['message_content'], $nr_telefonu) !== false) {
 
-            
+
             // Ustawiamy flagę na true i przerywamy pętlę
             $SMS_confirmation_data = [  //tworzy dane do dodania do bazy danych - event potwierdzenia smsa
                 'worker_id' => $worker_id,
@@ -214,7 +248,8 @@ function findAnswerSMSwithEmailAddress($worker_id,$nr_telefonu, $trescSMS) {   /
 
 
 <?php
-function db_connect_mysqli() {
+function db_connect_mysqli()
+{
     $servername = "192.168.101.240";
     $username = "kmadzia";
     $password = "PLdpzwZ]gvj_W5SZ";
@@ -231,10 +266,11 @@ function db_connect_mysqli() {
     return $conn; // Zwrócenie obiektu połączenia
 }
 
-?>  
+?>
 
 <?php
-function db_connect_mysqli_KM_VM() {
+function db_connect_mysqli_KM_VM()
+{
     $servername = "192.168.101.203";
     $username = "root";
     $password = "MojeHaslo33";
@@ -251,7 +287,7 @@ function db_connect_mysqli_KM_VM() {
     return $conn; // Zwrócenie obiektu połączenia
 }
 
-?>  
+?>
 
 
 
@@ -264,7 +300,8 @@ function db_connect_mysqli_KM_VM() {
 
 <?php  //łączenie do bazy PROSTO
 #region db_connect($servername, $username, $password, $database)
-function db_connect() {
+function db_connect()
+{
     $servername = "192.168.101.240";
     $username = "kmadzia";
     $password = "PLdpzwZ]gvj_W5SZ";
@@ -284,7 +321,8 @@ function db_connect() {
 
 
 <?php  //zwraca zarówno obiekt jak i gotowe dane
-function fetch_data($connection, $sql) {
+function fetch_data($connection, $sql)
+{
     if (is_resource($connection)) {
         // Dla Firebird
         $result = ibase_query($connection, $sql);
@@ -326,7 +364,8 @@ function fetch_data($connection, $sql) {
 
 <?php //wyświetlanie danych z bazy PROSTO
 #region display_table($stmt)
-function display_table($stmt) {
+function display_table($stmt)
+{
     if ($stmt->rowCount() > 0) {
         echo "<table border='1'><tr>";
         $firstRow = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -357,7 +396,8 @@ function display_table($stmt) {
 ?>
 
 <?php    //wersja dla FAKTUR! - jest specjalna wersja, bo musi zmieniać typy kolumn - np. żeby  była input, albo lista wyboru
-function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display = [], $lista_towarow = []) {
+function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display = [], $lista_towarow = [])
+{
     if (!empty($result_all_data)) {
         $table = "<table border='1'>"; // Tabela bez formularza
         $firstRow = $result_all_data[0]; // Pierwszy element tablicy
@@ -378,7 +418,7 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
             $filteredOptions = array_filter($lista_towarow, function ($item) use ($prefix) {
                 return stripos($item, $prefix) !== false;
             });
-            
+
 
             // Kolorowanie wierszy na podstawie wartości `name_fakt`
             $isOnList = in_array(strtolower($row['name_fakt']), array_map('strtolower', $lista_towarow));
@@ -400,8 +440,8 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
                     $table .= '<td>' . htmlspecialchars($row[$column] ?? '') . '</td>';
                 }
             }
-            
-            
+
+
             $table .= "</tr>";
         }
 
@@ -427,8 +467,9 @@ function display_table_from_arrayFAKTURY($result_all_data, $columns_to_display =
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function sendEmail($to, $subject, $body, $attachment_path = null, $is_html = false) {
-    echo "wchodzę do funkcji";
+function sendEmail($to, $subject, $body, $attachment_path = null, $is_html = false, $cc = null)
+{
+    //echo "wchodzę do funkcji";
     $mail = new PHPMailer(true);
 
     try {
@@ -442,21 +483,24 @@ function sendEmail($to, $subject, $body, $attachment_path = null, $is_html = fal
 
         $mail->setFrom('k.madzia@fops.pl', 'FOPS');
 
-        // Rozdzielenie adresów i dodanie każdego za pomocą addAddress
-        $email_array = explode(';', $to); // Rozdzielamy adresy po ŚREDNIKU
+        // Adresaci główni
+        $email_array = explode(';', $to);
         foreach ($email_array as $email) {
-            $mail->addAddress(trim($email)); // Usuwamy nadmiarowe białe znaki
+            $mail->addAddress(trim($email));
         }
 
-        $mail->CharSet = 'UTF-8'; // Kodowanie znaków
+        // Dodaj CC jeśli podano
+        if ($cc) {
+            $cc_array = explode(';', $cc);
+            foreach ($cc_array as $cc_email) {
+                $mail->addCC(trim($cc_email));
+            }
+        }
+
+        $mail->CharSet = 'UTF-8';
         $mail->Subject = $subject;
 
-        if ($is_html) {
-            $mail->isHTML(true); // Treść jako HTML
-        } else {
-            $mail->isHTML(false); // Treść jako zwykły tekst
-        }
-
+        $mail->isHTML($is_html);
         $mail->Body = $body;
 
         if ($attachment_path && file_exists($attachment_path)) {
@@ -470,15 +514,92 @@ function sendEmail($to, $subject, $body, $attachment_path = null, $is_html = fal
     }
 }
 
-
-
-
 ?>
+
 
 
 <?php
 
-function export_to_excel($data,$columns_to_display) {
+// Funkcja do sprawdzania wiadomości e-mail z opcjonalnym filtrowaniem statusu i wyborem folderu
+function checkEmails($host, $username, $password, $folder = "INBOX", $days_back = null, $from_address = null, $subject_fragment = null, $body_fragment = null, $filter = "ALL")
+{
+    $mailbox = imap_open("{" . $host . "/imap/ssl}$folder", $username, $password);
+    if (!$mailbox) {
+        die("Nie można połączyć się z serwerem pocztowym: " . imap_last_error());
+    }
+
+    $search_criteria = $filter;
+    if ($days_back) {
+        $since_date = date("d-M-Y", strtotime("-$days_back days"));
+        $search_criteria .= " SINCE \"$since_date\"";
+    }
+    if ($from_address) {
+        $search_criteria .= " FROM \"$from_address\"";
+    }
+    if ($subject_fragment) {
+        $search_criteria .= " SUBJECT \"$subject_fragment\"";
+    }
+    if ($body_fragment) {
+        $search_criteria .= " TEXT \"$body_fragment\"";
+    }
+
+    $emails = imap_search($mailbox, $search_criteria);
+    $results = [];
+
+    if ($emails) {
+        foreach ($emails as $email_number) {
+            $header = imap_headerinfo($mailbox, $email_number);
+            //$body = imap_body($mailbox, $email_number);
+            $body = imap_fetchbody($mailbox, $email_number, 1); // Pobiera tylko część tekstową
+
+
+            $results[] = [
+                'folder' => $folder, // Dodanie nazwy folderu do zwracanej tablicy
+                'nadawca' => $header->fromaddress,
+                'tytul' => $header->subject,
+                'tresc' => strip_tags($body),
+                'data' => date("Y-m-d H:i:s", strtotime($header->date))
+            ];
+        }
+    }
+
+    imap_close($mailbox);
+
+    return $results;
+}
+
+
+
+
+
+
+// Wywołanie funkcji
+$emails = checkEmails(
+    "serwer1400163.home.pl",
+    "k.madzia@fops.pl",
+    "MojeHaslo33",
+    null, // Brak ograniczenia liczby dni
+    null, // Brak określonego nadawcy
+    "Przypomnienie o sprawdzeniu przebiegu dla samochodu",
+    null // Brak określonej frazy w treści
+);
+
+// Wyświetlenie zwróconych danych
+foreach ($emails as $email) {
+    echo "Nadawca: " . $email['nadawca'] . PHP_EOL;
+    echo "Tytuł: " . $email['tytul'] . PHP_EOL;
+    echo "Treść: " . substr($email['tresc'], 0, 200) . "..." . PHP_EOL;
+    echo "Data otrzymania: " . $email['data'] . PHP_EOL;
+    echo "---------------------------" . PHP_EOL;
+}
+?>
+
+
+
+<?php
+
+function export_to_excel($data, $columns_to_display)
+{
     if (ob_get_contents()) {
         ob_end_clean();
     }
@@ -491,10 +612,10 @@ function export_to_excel($data,$columns_to_display) {
     $column_names = false;
     foreach ($data as $row) {
         if (!$column_names) {
-                    $filtered_columns = array_intersect_key($row, array_flip($columns_to_display));
-                    echo implode(",", array_keys($filtered_columns)) . "\n"; // Separator: przecinek
-                    $column_names = true;
-                }
+            $filtered_columns = array_intersect_key($row, array_flip($columns_to_display));
+            echo implode(",", array_keys($filtered_columns)) . "\n"; // Separator: przecinek
+            $column_names = true;
+        }
 
         array_walk($row, function (&$str) {
             $str = preg_replace("/,/", "\\,", $str); // Escapowanie przecinków
@@ -513,7 +634,8 @@ function export_to_excel($data,$columns_to_display) {
 }
 
 
-function executeSQL($connection, $filePath, $param = null) {
+function executeSQL($connection, $filePath, $param = null)
+{
     try {
         // Sprawdzenie, czy plik SQL istnieje
         if (!file_exists($filePath)) {
@@ -556,7 +678,7 @@ function executeSQL($connection, $filePath, $param = null) {
             $results[] = $row;
         }
 
-       // var_dump($results); // Debugging - wyświetlenie wyników
+        // var_dump($results); // Debugging - wyświetlenie wyników
 
         // Zwracanie wyników
         return $results;
@@ -568,7 +690,31 @@ function executeSQL($connection, $filePath, $param = null) {
 }
 
 
-function db_connect_firebird_FAKT_LIVE() {    //łączy do KOPII bazy FAKT_LIVE
+function db_connect_firebird_FAKT_COPY()
+{    //łączy do KOPII bazy FAKT_LIVE
+    $host = 'localhost';
+    $port = '3050';
+    $database_path = '/opt/firebird/FAKT_LIVE_COPY/0002BAZA.FDB';
+    $username = 'KRZYSIEK';
+    $password = 'Bielawa55';
+
+    $connection_string = "{$host}/{$port}:{$database_path}";
+
+    // Na sztywno ustawione kodowanie na UTF8
+    $connection = ibase_connect($connection_string, $username, $password, 'UTF8');
+
+    if (!$connection) {
+        die("Nie udało się połączyć z bazą danych Firebird: " . ibase_errmsg());
+    }
+
+    // echo możesz usunąć w wersji produkcyjnej
+    echo "Połączono z bazą danych Firebird!";
+    return $connection;
+}
+
+
+function db_connect_firebird_FAKT_LIVE()
+{    //łączy do KOPII bazy FAKT_LIVE
     $host = 'localhost';
     $port = '3050';
     $database_path = '/opt/firebird/FAKT_LIVE_COPY/0002BAZA.FDB';
@@ -594,9 +740,8 @@ function db_connect_firebird_FAKT_LIVE() {    //łączy do KOPII bazy FAKT_LIVE
 
 
 
-
-
-function db_connect_firebirdPDO() {
+function db_connect_firebirdPDO()
+{
     // Parametry połączenia
     $host = '192.168.101.79'; // Adres IP serwera
     $port = '3050'; // Port Firebird
@@ -626,7 +771,8 @@ function db_connect_firebirdPDO() {
 
 
 <?php
-function executeBatchFileOnKMpc($fileName) {
+function executeBatchFileOnKMpc($fileName)
+{
     // Stała część ścieżki na zdalnym komputerze
     $basePath = "C:\\Users\\Krzysztof\\Desktop\\SKRYPTY\\TEMP_SQL_REZULTS\\";
     $fullPath = $basePath . $fileName . ".bat";
@@ -641,21 +787,21 @@ function executeBatchFileOnKMpc($fileName) {
     exec($sshCommand, $output, $returnStatus);
 
     if ($returnStatus === 0) {
-       // echo "Plik {$fullPath} został pomyślnie uruchomiony.\n";
-      //  echo implode("\n", $output);
+        // echo "Plik {$fullPath} został pomyślnie uruchomiony.\n";
+        //  echo implode("\n", $output);
 
         // Polecenie SSH do odczytu zawartości pliku wynikowego
         $readCommand = 'ssh Krzysztof@192.168.101.9 "type ' . $outputFileRemote . '"';
         $remoteFileContent = [];
         $readStatus = 0;
 
-       // echo $readCommand;
+        // echo $readCommand;
 
         exec($readCommand, $remoteFileContent, $readStatus);
 
         if ($readStatus === 0) {
-          //  echo "\nZawartość pliku wynikowego:\n";
-          //  print_r($remoteFileContent); // Wyświetlenie zawartości
+            //  echo "\nZawartość pliku wynikowego:\n";
+            //  print_r($remoteFileContent); // Wyświetlenie zawartości
             return $remoteFileContent;  // Zwrócenie danych jako tablica
         } else {
             echo "\nBłąd podczas odczytu pliku wynikowego. Kod błędu: {$readStatus}\n";
@@ -669,7 +815,8 @@ function executeBatchFileOnKMpc($fileName) {
 
 
 
-function ClearSessionAndReload_KM() {
+function ClearSessionAndReload_KM()
+{
     // Sprawdzenie, czy sesja jest już uruchomiona
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
@@ -686,7 +833,8 @@ function ClearSessionAndReload_KM() {
 
 
 
-function display_table_from_array($result_all_data, $columns_to_display = []) {
+function display_table_from_array($result_all_data, $columns_to_display = [])
+{
     // Sprawdzamy, czy tablica nie jest pusta
     if (!empty($result_all_data)) {
         $table = '<form method="POST">'; // Formularz dla edycji danych
@@ -694,7 +842,7 @@ function display_table_from_array($result_all_data, $columns_to_display = []) {
         $firstRow = $result_all_data[0]; // Pierwszy element tablicy
         $table .= "<tr>";
 
-       
+
         // Wyświetlamy tylko wybrane kolumny lub wszystkie, jeśli lista jest pusta
         $columns = empty($columns_to_display) ? array_keys($firstRow) : $columns_to_display;
         foreach ($columns as $column) {
@@ -702,7 +850,7 @@ function display_table_from_array($result_all_data, $columns_to_display = []) {
         }
         $table .= "</tr>";
 
-        
+
         // Wyświetlamy wszystkie wiersze
         foreach ($result_all_data as $row) {
             //******************************** Usunięto kolorowanie i sprawdzanie listy towarów ********************************
@@ -733,7 +881,8 @@ function display_table_from_array($result_all_data, $columns_to_display = []) {
 ?>
 
 <?php
-function save_data_to_csv($data, $file_path) {
+function save_data_to_csv($data, $file_path)
+{
     // Otwieranie pliku w trybie zapisu (wstawienie danych na początku, jeżeli plik istnieje)
     $file = fopen($file_path, 'w');
 
@@ -765,7 +914,8 @@ function save_data_to_csv($data, $file_path) {
 
 use setasign\Fpdi\Fpdi;
 
-function splitPdf($path_origin, $path_destination) {
+function splitPdf($path_origin, $path_destination)
+{
     if (!file_exists($path_origin)) {
         echo "Plik PDF nie istnieje: $path_origin\n";
         return;
@@ -796,18 +946,30 @@ function splitPdf($path_origin, $path_destination) {
         $outputFile = $path_destination . '/strona_' . $pageNo . '.pdf';
         $newPdf->Output('F', $outputFile);
 
-        echo "Strona $pageNo została zapisana jako: $outputFile\n";
+        //echo "Strona $pageNo została zapisana jako: $outputFile\n";
     }
 
-    echo "Proces podziału PDF zakończony!\n";
+   // echo "Proces podziału PDF zakończony!\n";
 }
 ?>
 
+
+
+
+
+
+
+
+
+
+
+
 <?php
 use Smalot\PdfParser\Parser;
-use setasign\FpdiProtection\FpdiProtection;
 
-function getAllNamesFromPdfDir($dir_path, $szyfrowac = false) {
+function ReadFromPdfDirSetProtection($dir_path, $regex, $szyfrowac = false)
+
+{
     $result = [];
 
     if (!is_dir($dir_path)) {
@@ -833,8 +995,10 @@ function getAllNamesFromPdfDir($dir_path, $szyfrowac = false) {
             }
 
             $text = $pages[0]->getText();
+            $text = str_replace(["œ", "Ÿ"], ["ś", "ź"], $text);
 
-            if (preg_match('/\|\s*1\|(.*?)\|/', $text, $matches)) {
+
+            if (preg_match( $regex, $text, $matches)) {
                 $nazwisko_imie = trim($matches[1]);
 
                 // Generowanie hasła: na przykład stałe hasło 'mojehaslo'
@@ -874,11 +1038,79 @@ function getAllNamesFromPdfDir($dir_path, $szyfrowac = false) {
 
     return $result;
 }
+?>
 
 
-function setProtection($sciezka_pdf_local, $password) {
-    $fpdi = new FpdiProtection();
+<?php  //funkcja pobiera po prostu tekst z PDFa
+function readPdfText($filePath) {
+    if (!file_exists($filePath)) {
+        return "Błąd: Plik nie istnieje.";
+    }
+
+    $parser = new Parser();
+    $pdf = $parser->parseFile($filePath);
     
+    return $pdf->getText();
+}
+?>
+
+<?php
+
+function regexGetMatchingText($tekst, $reg_text)
+{
+    $matches = [];
+
+    if (preg_match($reg_text, $tekst, $matches)) {
+        return trim($matches[0]); // Zwrócenie dopasowanego tekstu
+    }
+
+    return null; // Jeśli nie znaleziono dopasowania, zwróć null
+}
+
+?>
+
+
+<?php
+function getNamesFromUploadedPdf(string $tmp_pdf_path): array
+{
+    $result = [];
+
+    if (!file_exists($tmp_pdf_path)) {
+        return ['error' => "Plik nie istnieje: $tmp_pdf_path"];
+    }
+
+    try {
+        $parser = new Parser();
+        $pdf = $parser->parseFile($tmp_pdf_path);
+        $pages = $pdf->getPages();
+
+        foreach ($pages as $i => $page) {
+            $text = str_replace(["œ", "Ÿ"], ["ś", "ź"], $page->getText());
+
+            // Jeśli masz własny wzorzec, zamień poniższą linię
+            if (preg_match('/\|\s*(?:[1-9]|[1-9]\d|100)\s*\|(.*?)\|/', $text, $matches)) {
+                $result[] = [
+                    'numer_strony' => $i + 1,
+                    'nazwisko_imie' => trim($matches[1]),
+                ];
+            }
+        }
+    } catch (\Exception $e) {
+        return ['error' => 'Błąd parsowania: ' . $e->getMessage()];
+    }
+
+    return $result;
+}
+
+?>
+
+
+<?php
+
+function setProtection($sciezka_pdf_local, $password)
+{
+    $fpdi = new FpdiProtection();
+
     // Sprawdzenie, czy plik istnieje
     if (!file_exists($sciezka_pdf_local)) {
         throw new Exception("Plik PDF nie istnieje: " . $sciezka_pdf_local);
@@ -903,100 +1135,103 @@ function setProtection($sciezka_pdf_local, $password) {
 }
 
 
+?>
+
+<?php
 
 
 
+function insertIntoTable($conn, $table, $data)
+{
+if (!$conn) {
+die("Brak połączenia z bazą danych.");
+}
 
+if (empty($table) || empty($data)) {
+throw new Exception("Nie podano tabeli ani danych.");
+}
 
-function insertIntoTable($conn, $table, $data) {
-    if (!$conn) {
-        die("Brak połączenia z bazą danych.");
-    }
+// Pomijamy kolumnę 'id' (autoincrement)
+$dataToCheck = $data;
+unset($dataToCheck['id']);
 
-    if (empty($table) || empty($data)) {
-        throw new Exception("Nie podano tabeli ani danych.");
-    }
+// Budowanie WHERE do sprawdzenia duplikatu
+$whereClause = [];
+$checkTypes = "";
+$checkValues = [];
 
-    // Pomijamy kolumnę 'id' (autoincrement)
-    $dataToCheck = $data;
-    unset($dataToCheck['id']);
+foreach ($dataToCheck as $key => $value) {
+$whereClause[] = "$key = ?";
+$checkValues[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
 
-    // Budowanie WHERE do sprawdzenia duplikatu
-    $whereClause = [];
-    $checkTypes = "";
-    $checkValues = [];
+if (is_int($value)) {
+$checkTypes .= "i";
+} elseif (is_float($value)) {
+$checkTypes .= "d";
+} else {
+$checkTypes .= "s";
+}
+}
 
-    foreach ($dataToCheck as $key => $value) {
-        $whereClause[] = "$key = ?";
-        $checkValues[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
+$checkSql = "SELECT 1 FROM $table WHERE " . implode(" AND ", $whereClause) . " LIMIT 1";
+$checkStmt = $conn->prepare($checkSql);
 
-        if (is_int($value)) {
-            $checkTypes .= "i";
-        } elseif (is_float($value)) {
-            $checkTypes .= "d";
-        } else {
-            $checkTypes .= "s";
-        }
-    }
+if (!$checkStmt) {
+throw new Exception("Błąd przygotowania zapytania SELECT: " . $conn->error);
+}
 
-    $checkSql = "SELECT 1 FROM $table WHERE " . implode(" AND ", $whereClause) . " LIMIT 1";
-    $checkStmt = $conn->prepare($checkSql);
+$checkStmt->bind_param($checkTypes, ...$checkValues);
+$checkStmt->execute();
+$checkStmt->store_result();
 
-    if (!$checkStmt) {
-        throw new Exception("Błąd przygotowania zapytania SELECT: " . $conn->error);
-    }
+if ($checkStmt->num_rows > 0) {
+// Wiersz już istnieje – nie robimy INSERT
+return false;
+}
 
-    $checkStmt->bind_param($checkTypes, ...$checkValues);
-    $checkStmt->execute();
-    $checkStmt->store_result();
+$checkStmt->close();
 
-    if ($checkStmt->num_rows > 0) {
-        // Wiersz już istnieje – nie robimy INSERT
-        return false;
-    }
+// Kontynuujemy INSERT jak dotychczas
+$columns = implode(", ", array_keys($data));
+$placeholders = implode(", ", array_fill(0, count($data), "?"));
 
-    $checkStmt->close();
+$types = "";
+$values = [];
+foreach ($data as $value) {
+$values[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
+if (is_int($value)) {
+$types .= "i";
+} elseif (is_float($value)) {
+$types .= "d";
+} else {
+$types .= "s";
+}
+}
 
-    // Kontynuujemy INSERT jak dotychczas
-    $columns = implode(", ", array_keys($data));
-    $placeholders = implode(", ", array_fill(0, count($data), "?"));
+$sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+$stmt = $conn->prepare($sql);
 
-    $types = "";
-    $values = [];
-    foreach ($data as $value) {
-        $values[] = $value instanceof DateTime ? $value->format('Y-m-d H:i:s') : $value;
-        if (is_int($value)) {
-            $types .= "i";
-        } elseif (is_float($value)) {
-            $types .= "d";
-        } else {
-            $types .= "s";
-        }
-    }
+if (!$stmt) {
+throw new Exception("Błąd przygotowania zapytania INSERT: " . $conn->error);
+}
 
-    $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-    $stmt = $conn->prepare($sql);
+$stmt->bind_param($types, ...$values);
 
-    if (!$stmt) {
-        throw new Exception("Błąd przygotowania zapytania INSERT: " . $conn->error);
-    }
-
-    $stmt->bind_param($types, ...$values);
-
-    if ($stmt->execute()) {
-        $stmt->close();
-        return true;
-    } else {
-        $stmt->close();
-        throw new Exception("Błąd wykonania zapytania: " . $stmt->error);
-    }
+if ($stmt->execute()) {
+$stmt->close();
+return true;
+} else {
+$stmt->close();
+throw new Exception("Błąd wykonania zapytania: " . $stmt->error);
+}
 }
 
 
 ?>
 
 <?php
-function updateTable($conn, $table, $data, $where) {
+function updateTable($conn, $table, $data, $where)
+{
     if (!$conn) {
         die("Brak połączenia z bazą danych.");
     }
@@ -1057,8 +1292,3 @@ function updateTable($conn, $table, $data, $where) {
         throw new Exception("Błąd wykonania zapytania: " . $stmt->error);
     }
 }
-
-?>
-
-
-

@@ -1,3 +1,4 @@
+<?php if (empty($_GET['nomenu'])): ?>
 <header>
     <nav>
         <ul>
@@ -8,12 +9,8 @@
                 <li><a href="index.php?page=etykiety" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'etykiety') ? 'active' : ''; ?>">Wspólne etykiety</a></li>
                 <li><a href="index.php?page=faktury" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'faktury') ? 'active' : ''; ?>">Faktury</a></li>
                 <li><a href="index.php?page=bdo" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'bdo') ? 'active' : ''; ?>">BeDeO</a></li>
-                <li>
-                    <a href="index.php?page=paski_wyplaty" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'paski_wyplaty') ? 'active' : ''; ?>">Paski</a>
-                    <ul class="submenu">
-                        <li><a href="index.php?page=dane_pracownikow" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'dane_pracownikow') ? 'active' : ''; ?>">Dane pracowników</a></li>
-                    </ul>
-                </li>
+                <li><a href="index.php?page=paski_wyplaty" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'paski_wyplaty') ? 'active' : ''; ?>">PW</a></li>
+
                 <li><a href="index.php?page=naleznosci" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'naleznosci') ? 'active' : ''; ?>">Naleznosci</a></li>
 
                 <li>
@@ -25,8 +22,13 @@
 
                 <li><a href="index.php?page=sterowanie_bramy" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'sterowanie_bramy') ? 'active' : ''; ?>">Sterowanie bramy</a></li>
                 <li><a href="index.php?page=odczytFAKTURYzakupowej" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'odczytFAKTURYzakupowej') ? 'active' : ''; ?>">odczytFAKTURYzakupowej</a></li>
+                <li><a href="index.php?page=SAMOchody" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'SAMOchody') ? 'active' : ''; ?>">Samochody</a></li>
+                <li><a href="index.php?page=bramkaSMS" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'bramkaSMS') ? 'active' : ''; ?>">Skrzynka SMS</a></li>
+                <li><a href="index.php?page=Zamowienia_odbiory_kurierzy/petla_zczytywanie_danych" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'petla_zczytywanie_danych') ? 'active' : ''; ?>">Zamowienia-kurierzy</a></li>
                 <li><a href="index.php?page=test_inner" class="<?php echo (isset($_GET['page']) && $_GET['page'] == 'test_inner') ? 'active' : ''; ?>">TEST_inner</a></li>
             </div>
         </ul>
     </nav>
 </header>
+
+<?php endif;
