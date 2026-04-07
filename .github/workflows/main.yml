@@ -21,16 +21,12 @@ jobs:
           pip install --upgrade pip
           pip install pyinstaller pypdf PyQt6
 
-      - name: Show PyQt6 paths (debug)
-        run: |
-          python3 - << 'EOF'
-          import PyQt6, os
-          print("PyQt6 path:", os.path.dirname(PyQt6.__file__))
-          EOF
-
       - name: Build macOS app
         working-directory: pages/ETYKIETY_jakosc/DZIELENIE_PDF
         run: |
+          # Usuń stary plik .spec, który wymuszał onefile
+          rm -f PDF_Splitter.spec
+
           PYQT_PATH=$(python3 -c "import PyQt6, os; print(os.path.dirname(PyQt6.__file__))")
           PLUGINS_PATH="$PYQT_PATH/Qt6/plugins"
 
@@ -41,6 +37,9 @@ jobs:
             --onedir \
             --windowed \
             --name "PDF_Splitter" \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtCore \
             --add-data "$PLUGINS_PATH:Qt/plugins" \
             pdf_splitter.py
 
