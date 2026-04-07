@@ -19,29 +19,28 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pyinstaller pypdf PyQt5
+          pip install pyinstaller pypdf PyQt6
 
-      - name: Show PyQt5 paths (debug)
+      - name: Show PyQt6 paths (debug)
         run: |
           python3 - << 'EOF'
-          import PyQt5, os
-          print("PyQt5 path:", os.path.dirname(PyQt5.__file__))
+          import PyQt6, os
+          print("PyQt6 path:", os.path.dirname(PyQt6.__file__))
           EOF
 
       - name: Build macOS app
         working-directory: pages/ETYKIETY_jakosc/DZIELENIE_PDF
         run: |
-          PYQT_PATH=$(python3 -c "import PyQt5, os; print(os.path.dirname(PyQt5.__file__))")
-          PLUGINS_PATH="$PYQT_PATH/Qt/plugins"
+          PYQT_PATH=$(python3 -c "import PyQt6, os; print(os.path.dirname(PyQt6.__file__))")
+          PLUGINS_PATH="$PYQT_PATH/Qt6/plugins"
 
-          echo "PyQt5 path: $PYQT_PATH"
-          echo "Qt plugins: $PLUGINS_PATH"
+          echo "PyQt6 path: $PYQT_PATH"
+          echo "Qt6 plugins: $PLUGINS_PATH"
 
           pyinstaller \
-            --onefile \
+            --onedir \
             --windowed \
             --name "PDF_Splitter" \
-            --hidden-import PyQt5.sip \
             --add-data "$PLUGINS_PATH:Qt/plugins" \
             pdf_splitter.py
 
