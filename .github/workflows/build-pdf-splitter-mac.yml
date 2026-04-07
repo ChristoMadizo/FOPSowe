@@ -1,7 +1,7 @@
 name: Build PDF Splitter (macOS)
 
 on:
-  workflow_dispatch:  # uruchamiaj ręcznie z zakładki Actions
+  workflow_dispatch:
 
 jobs:
   build-macos:
@@ -17,15 +17,32 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pyinstaller pypdf PyQt6
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller pypdf PyQt5
+
+      - name: Show PyQt5 paths (debug)
+        run: |
+          python3 - << 'EOF'
+          import PyQt5, os
+          print("PyQt5 path:", os.path.dirname(PyQt5.__file__))
+          EOF
 
       - name: Build macOS app
         working-directory: pages/ETYKIETY_jakosc/DZIELENIE_PDF
         run: |
+          PYQT_PATH=$(python3 -c "import PyQt5, os; print(os.path.dirname(PyQt5.__file__))")
+          PLUGINS_PATH="$PYQT_PATH/Qt/plugins"
+
+          echo "PyQt5 path: $PYQT_PATH"
+          echo "Qt plugins: $PLUGINS_PATH"
+
           pyinstaller \
             --onefile \
             --windowed \
             --name "PDF_Splitter" \
+            --hidden-import PyQt5.sip \
+            --add-data "$PLUGINS_PATH:Qt/plugins" \
             pdf_splitter.py
 
       - name: Upload artifact
